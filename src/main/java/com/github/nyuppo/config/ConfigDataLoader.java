@@ -33,6 +33,7 @@ public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener
         MoreMobVariants.LOGGER.info("Reloading config...");
 
         Variants.clearAllVariants();
+        Variants.initializeFromDefaults();
         for (Identifier id : manager.findResources("variants", path -> path.getPath().endsWith(".json")).keySet()) {
             String path = id.getPath().substring("variants/".length(), id.getPath().length() - ".json".length());
             String[] split = path.split("/");

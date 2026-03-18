@@ -1,6 +1,6 @@
 # More Mob Variants
 
-Minecraft Fabric mod for adding new variants to existing mobs. Developed for 1.19.4.
+Minecraft Fabric mod that adds new visual variants to existing mobs (cats, chickens, cows, pigs, sheep, wolves, zombies, skeletons, spiders). Variants are persistent and synced for all players. Requires the mod on both client and server. Supports Minecraft 1.21.1 with Fabric.
 
 For the Forge version, visit [this page](https://github.com/nyuppo/MobVariantsForge).
 

@@ -1,1 +1,3 @@
-accessWidener v2 named
+accessWidener	v2	named
+accessible	method	net/minecraft/client/render/entity/model/CowEntityModel	getModelData	()Lnet/minecraft/client/model/ModelData;
+accessible	method	net/minecraft/client/render/entity/model/PigEntityModel	getModelData	(Lnet/minecraft/client/model/Dilation;)Lnet/minecraft/client/model/ModelData;

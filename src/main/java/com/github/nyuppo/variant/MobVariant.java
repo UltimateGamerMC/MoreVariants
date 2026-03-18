@@ -2,9 +2,11 @@ package com.github.nyuppo.variant;
 
 import com.github.nyuppo.MoreMobVariants;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.biome.Biome;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,8 +115,17 @@ public class MobVariant {
                 return true;
             }
         }
-
         return false;
+    }
+
+    @Nullable
+    public TagKey<Biome> getSpawnableBiomeTag() {
+        for (VariantModifier modifier : this.modifiers) {
+            if (modifier instanceof SpawnableBiomesModifier s) {
+                return s.spawnBiomes();
+            }
+        }
+        return null;
     }
 
     public boolean hasBreedingResultModifier() {

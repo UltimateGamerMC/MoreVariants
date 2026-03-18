@@ -15,8 +15,6 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.render.entity.PigEntityRenderer;
 import net.minecraft.client.render.entity.SheepEntityRenderer;
 import net.minecraft.client.render.entity.feature.FeatureRendererContext;
-import net.minecraft.client.render.entity.model.PigEntityModel;
-import net.minecraft.client.render.entity.model.SheepEntityModel;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CatEntity;
@@ -28,20 +26,35 @@ import net.minecraft.network.PacketByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MoreMobVariantsClient implements ClientModInitializer {
     Set<EntityType> validEntities = Set.of(EntityType.CAT, EntityType.CHICKEN, EntityType.COW, EntityType.PIG, EntityType.SHEEP, EntityType.SKELETON, EntityType.SPIDER, EntityType.WOLF, EntityType.ZOMBIE);
+    public static final Map<Integer, String> VARIANT_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Integer, Long> LAST_VARIANT_REQUEST = new ConcurrentHashMap<>();
+    private static final long REQUEST_COOLDOWN_MS = 2000;
+
+    public static void requestVariantIfNeeded(Entity entity) {
+        if (entity == null || entity.getEntityWorld() == null) return;
+        int id = entity.getId();
+        if (VARIANT_CACHE.containsKey(id)) return;
+        long now = System.currentTimeMillis();
+        if (now - LAST_VARIANT_REQUEST.getOrDefault(id, 0L) < REQUEST_COOLDOWN_MS) return;
+        LAST_VARIANT_REQUEST.put(id, now);
+        ClientPlayNetworking.send(new ClientRequestVariantPayload(entity.getUuid()));
+    }
 
     @Override
     public void onInitializeClient() {
         // Add render layers
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((entityType, entityRenderer, registrationHelper, context) -> {
             if (entityRenderer instanceof PigEntityRenderer) {
-                registrationHelper.register(new PigMudFeatureRenderer<PigEntity, PigEntityModel<PigEntity>>((FeatureRendererContext)entityRenderer));
+                registrationHelper.register((net.minecraft.client.render.entity.feature.FeatureRenderer) new PigMudFeatureRenderer((FeatureRendererContext) entityRenderer));
             } else if (entityRenderer instanceof SheepEntityRenderer) {
-                registrationHelper.register(new ShearedWoolColorFeatureRenderer<SheepEntity, SheepEntityModel<SheepEntity>>((FeatureRendererContext)entityRenderer));
-                registrationHelper.register(new SheepHornsFeatureRenderer<SheepEntity, SheepEntityModel<SheepEntity>>((FeatureRendererContext)entityRenderer));
+                registrationHelper.register((net.minecraft.client.render.entity.feature.FeatureRenderer) new ShearedWoolColorFeatureRenderer((FeatureRendererContext) entityRenderer));
+                registrationHelper.register((net.minecraft.client.render.entity.feature.FeatureRenderer) new SheepHornsFeatureRenderer((FeatureRendererContext) entityRenderer));
             }
         });
 
@@ -58,14 +71,14 @@ public class MoreMobVariantsClient implements ClientModInitializer {
             var client = context.client();
             int id = payload.entityId();
             String variantId = payload.variantId();
+            VARIANT_CACHE.put(id, variantId);
             client.execute(() -> {
                 if (client.world != null) {
                     Entity entity = client.world.getEntityById(id);
                     if (entity != null) {
-                        NbtCompound nbt = new NbtCompound();
-                        entity.writeNbt(nbt);
+                        NbtCompound nbt = MoreMobVariants.getCustomDataNbt(entity);
                         nbt.putString(MoreMobVariants.NBT_KEY, variantId);
-                        entity.readNbt(nbt);
+                        MoreMobVariants.setCustomDataNbt(entity, nbt);
                     }
                 }
             });
@@ -83,44 +96,33 @@ public class MoreMobVariantsClient implements ClientModInitializer {
             int i = payload.muddyTimeout();
             String str = payload.sheepHornColour();
 
+            VARIANT_CACHE.put(id, variantId);
             client.execute(() -> {
                 if (client.world != null) {
                     Entity entity = client.world.getEntityById(id);
                     if (entity != null) {
-                        NbtCompound nbt = new NbtCompound();
-                        entity.writeNbt(nbt);
-
+                        NbtCompound nbt = MoreMobVariants.getCustomDataNbt(entity);
                         nbt.putString(MoreMobVariants.NBT_KEY, variantId);
-
-                        // For some reason, "Sitting" syncing breaks, so get that too I guess
                         if (entity instanceof TameableEntity) {
-                            nbt.putBoolean("Sitting",bl);
+                            nbt.putBoolean("Sitting", bl);
                         }
-
-                        // Muddy pigs
-                        boolean isMuddy;
-                        int muddyTimeLeft;
                         if (entity instanceof PigEntity) {
-                            isMuddy = bl;
-                            muddyTimeLeft = i;
-
-                            nbt.putBoolean(MoreMobVariants.MUDDY_NBT_KEY, isMuddy);
-                            nbt.putInt(MoreMobVariants.MUDDY_TIMEOUT_NBT_KEY, muddyTimeLeft);
+                            nbt.putBoolean(MoreMobVariants.MUDDY_NBT_KEY, bl);
+                            nbt.putInt(MoreMobVariants.MUDDY_TIMEOUT_NBT_KEY, i);
                         }
-
-                        // Sheep horns
-                        String hornColour;
                         if (entity instanceof SheepEntity) {
-                            hornColour = str;
-
-                            nbt.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
+                            nbt.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, str);
                         }
-
-                        entity.readNbt(nbt);
+                        MoreMobVariants.setCustomDataNbt(entity, nbt);
                     }
                 }
             });
         }));
+
+        ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            VARIANT_CACHE.remove(entity.getId());
+            LAST_VARIANT_REQUEST.remove(entity.getId());
+        });
     }
 
 }

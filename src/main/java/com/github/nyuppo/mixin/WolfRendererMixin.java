@@ -1,6 +1,7 @@
 package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.MoreMobVariants;
+import com.github.nyuppo.client.render.MMVLivingRenderState;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.variant.MobVariant;
 import net.minecraft.client.render.entity.WolfEntityRenderer;
@@ -11,7 +12,9 @@ import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.client.render.entity.state.WolfEntityRenderState;
 
 @Mixin(WolfEntityRenderer.class)
 public class WolfRendererMixin {
@@ -19,39 +22,32 @@ public class WolfRendererMixin {
     private static final Identifier DEFAULT_TAMED = Identifier.ofVanilla("textures/entity/wolf/wolf_tame.png");
     private static final Identifier DEFAULT_ANGRY = Identifier.ofVanilla("textures/entity/wolf/wolf_angry.png");
 
-    @Inject(method = "getTexture", at = @At("HEAD"), cancellable = true)
-    private void onGetTexture(WolfEntity wolfEntity, CallbackInfoReturnable<Identifier> ci) {
-        NbtCompound nbt = new NbtCompound();
-        wolfEntity.writeNbt(nbt);
-
-        if (nbt.contains(MoreMobVariants.NBT_KEY)) {
-            String variant = nbt.getString(MoreMobVariants.NBT_KEY);
-            if (variant.equals(MoreMobVariants.id("default").toString()) || variant.isEmpty()) {
-                if (wolfEntity.isTamed()) {
-                    ci.setReturnValue(DEFAULT_TAMED);
-                } else {
-                    ci.setReturnValue(wolfEntity.hasAngerTime() ? DEFAULT_ANGRY : DEFAULT_WILD);
-                }
-            } else {
-                String[] split = Variants.splitVariant(variant);
-                if (wolfEntity.isTamed()) {
-                    ci.setReturnValue(Identifier.of(split[0], "textures/entity/wolf/" + split[1] + "_tame.png"));
-                } else {
-                    ci.setReturnValue(wolfEntity.hasAngerTime() ? Identifier.of(split[0], "textures/entity/wolf/" + split[1] + "_angry.png") : Identifier.of(split[0], "textures/entity/wolf/" + split[1] + "_wild.png"));
-                }
+    @Inject(method = "updateRenderState", at = @At("RETURN"))
+    private void onUpdateRenderState(WolfEntity entity, WolfEntityRenderState state, float tickDelta, CallbackInfo ci) {
+        NbtCompound nbt = MoreMobVariants.getCustomDataNbt(entity);
+        MMVLivingRenderState ext = (MMVLivingRenderState) state;
+        String variantStr = nbt.getString(MoreMobVariants.NBT_KEY, "");
+        ext.setMmvVariantId(variantStr);
+        ext.setMmvTextureOverride(null);
+        if (entity.hasCustomName()) {
+            MobVariant v = Variants.getVariantFromNametag(EntityType.WOLF, entity.getName().getString());
+            if (v != null) {
+                Identifier id = v.getIdentifier();
+                String suffix = entity.isTamed() ? "_tame" : entity.hasAngerTime() ? "_angry" : "_wild";
+                ext.setMmvTextureOverride(Identifier.of(id.getNamespace(), "textures/entity/wolf/" + id.getPath() + suffix + ".png"));
             }
+        } else if (variantStr != null && !variantStr.isEmpty() && !variantStr.equals(MoreMobVariants.id("default").toString())) {
+            String[] split = Variants.splitVariant(variantStr);
+            String suffix = entity.isTamed() ? "_tame" : entity.hasAngerTime() ? "_angry" : "_wild";
+            ext.setMmvTextureOverride(Identifier.of(split[0], "textures/entity/wolf/" + split[1] + suffix + ".png"));
         }
+    }
 
-        if (wolfEntity.hasCustomName()) {
-            MobVariant variant = Variants.getVariantFromNametag(EntityType.WOLF, wolfEntity.getName().getString());
-            if (variant != null) {
-                Identifier identifier = variant.getIdentifier();
-                if (wolfEntity.isTamed()) {
-                    ci.setReturnValue(Identifier.of(identifier.getNamespace(), "textures/entity/wolf/" + identifier.getPath() + "_tame.png"));
-                } else {
-                    ci.setReturnValue(wolfEntity.hasAngerTime() ? Identifier.of(identifier.getNamespace(), "textures/entity/wolf/" + identifier.getPath() + "_angry.png") : Identifier.of(identifier.getNamespace(), "textures/entity/wolf/" + identifier.getPath() + "_wild.png"));
-                }
-            }
+    @Inject(method = "getTexture(Lnet/minecraft/client/render/entity/state/WolfEntityRenderState;)Lnet/minecraft/util/Identifier;", at = @At("HEAD"), cancellable = true)
+    private void onGetTexture(WolfEntityRenderState state, CallbackInfoReturnable<Identifier> ci) {
+        Identifier override = ((MMVLivingRenderState) state).getMmvTextureOverride();
+        if (override != null) {
+            ci.setReturnValue(override);
         }
     }
 }

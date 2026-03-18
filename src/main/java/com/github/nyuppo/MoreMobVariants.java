@@ -2,9 +2,10 @@ package com.github.nyuppo;
 
 import com.github.nyuppo.config.ConfigDataLoader;
 import com.github.nyuppo.networking.ClientRequestVariantPayload;
-import com.github.nyuppo.networking.MMVNetworkingConstants;
 import com.github.nyuppo.networking.ServerRespondBasicVariantPayload;
 import com.github.nyuppo.networking.ServerRespondVariantPayload;
+import com.github.nyuppo.util.MMVTrackedData;
+import net.minecraft.entity.passive.ChickenEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
@@ -13,6 +14,8 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.block.Block;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -22,6 +25,8 @@ import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.BiomeTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.server.world.ServerWorld;
@@ -93,32 +98,33 @@ public class MoreMobVariants implements ModInitializer {
                 }
 
                 if (entity != null) {
-                    NbtCompound nbt = new NbtCompound();
-                    entity.writeNbt(nbt);
-
+                    if (entity instanceof ChickenEntity chicken) {
+                        String vid = chicken.getDataTracker().get(MMVTrackedData.CHICKEN_VARIANT_ID);
+                        if (vid != null && !vid.isEmpty()) {
+                            ServerPlayNetworking.send(context.player(), new ServerRespondBasicVariantPayload(entity.getId(), vid));
+                            return;
+                        }
+                    }
+                    NbtCompound nbt = getCustomDataNbt(entity);
                     if (nbt.contains(NBT_KEY)) {
-                        //going to pass all three of these regardless, so buf structure is constant. More cases can be added and hook into these as needed.
                         boolean bl = false;
                         int i = 0;
                         String str = "";
 
-                        // For some reason, "Sitting" syncing breaks, so send that too I guess
                         if (entity instanceof TameableEntity) {
-                            bl = nbt.getBoolean("Sitting");
+                            bl = nbt.getBoolean("Sitting", false);
                         }
 
-                        // Muddy pigs
                         if (entity instanceof PigEntity) {
-                            bl = nbt.getBoolean(MUDDY_NBT_KEY);
-                            i = nbt.getInt(MUDDY_TIMEOUT_NBT_KEY);
+                            bl = nbt.getBoolean(MUDDY_NBT_KEY, false);
+                            i = nbt.getInt(MUDDY_TIMEOUT_NBT_KEY, 0);
                         }
 
-                        // Sheep horns
                         if (entity instanceof SheepEntity) {
-                            str = nbt.getString(SHEEP_HORN_COLOUR_NBT_KEY);
+                            str = nbt.getString(SHEEP_HORN_COLOUR_NBT_KEY, "");
                         }
 
-                        var responsePayload = new ServerRespondVariantPayload(entity.getId(), nbt.getString(NBT_KEY), bl, i, str);
+                        var responsePayload = new ServerRespondVariantPayload(entity.getId(), nbt.getString(NBT_KEY, ""), bl, i, str);
                         ServerPlayNetworking.send(context.player(), responsePayload);
                     }
                 }
@@ -128,5 +134,18 @@ public class MoreMobVariants implements ModInitializer {
 
     public static Identifier id(String path) {
         return Identifier.of(MOD_ID, path);
+    }
+
+    public static boolean isTemperateBiome(RegistryEntry<Biome> biome) {
+        return biome != null && !biome.isIn(BiomeTags.SPAWNS_COLD_VARIANT_FARM_ANIMALS) && !biome.isIn(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS);
+    }
+
+    public static NbtCompound getCustomDataNbt(Entity entity) {
+        NbtComponent c = entity.get(DataComponentTypes.CUSTOM_DATA);
+        return c != null ? c.copyNbt() : new NbtCompound();
+    }
+
+    public static void setCustomDataNbt(Entity entity, NbtCompound nbt) {
+        entity.setComponent(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
     }
 }

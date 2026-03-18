@@ -74,7 +74,7 @@ public class Variants {
         }
 
         if (mob == EntityType.CAT) {
-            return new MobVariant(Identifier.of("tabby"), 1);
+            return new MobVariant(Identifier.ofVanilla("tabby"), 1);
         }
 
         return new MobVariant(MoreMobVariants.id("default"), 1);
@@ -116,6 +116,17 @@ public class Variants {
     public static void clearAllVariants() {
         variants.clear();
         nametagOverrides.clear();
+    }
+
+    public static void initializeFromDefaults() {
+        for (EntityType<?> type : defaultVariants.keySet()) {
+            variants.put(type, new ArrayList<>(defaultVariants.get(type)));
+        }
+        nametagOverrides.put(EntityType.SHEEP, new ArrayList<>(List.of(
+                new MobVariant(MoreMobVariants.id("rainbow"), 0)
+                        .addModifier(new CustomWoolModifier())
+                        .addModifier(new NametagOverrideModifier("rainbow"))
+        )));
     }
 
     public static void validateEmptyVariants() {
@@ -170,7 +181,6 @@ public class Variants {
         while (i.hasNext()) {
             variant = i.next();
 
-            // Discard if not in spawn biome
             if (spawnBiome != null && variant.hasSpawnableBiomeModifier()) {
                 if (!variant.isInSpawnBiome(spawnBiome)) {
                     i.remove();
@@ -197,7 +207,6 @@ public class Variants {
                 continue;
             }
 
-            // Discard if minimum moon phase is not present
             if (moonSize != null && variant.hasMinimumMoonSize()) {
                 if (!variant.meetsMinimumMoonSize(moonSize)) {
                     i.remove();
@@ -206,7 +215,10 @@ public class Variants {
             }
         }
 
-        // Create weighted bag from variants
+        if (variants.isEmpty()) {
+            return getDefaultVariant(mob);
+        }
+
         VariantBag bag = new VariantBag(mob, variants);
 
         // If we've been provided 2 parents
@@ -247,16 +259,13 @@ public class Variants {
     }
 
     public static MobVariant getChildVariant(EntityType<?> mob, ServerWorld world, PassiveEntity parent1, PassiveEntity parent2) {
-        // Collect data about parents
-        NbtCompound parent1Nbt = new NbtCompound();
-        parent1.writeNbt(parent1Nbt);
-        NbtCompound parent2Nbt = new NbtCompound();
-        parent2.writeNbt(parent2Nbt);
+        NbtCompound parent1Nbt = MoreMobVariants.getCustomDataNbt(parent1);
+        NbtCompound parent2Nbt = MoreMobVariants.getCustomDataNbt(parent2);
 
         if (parent1Nbt.contains(MoreMobVariants.NBT_KEY) && parent2Nbt.contains(MoreMobVariants.NBT_KEY)) {
-            String[] parent1VariantId = parent1Nbt.getString(MoreMobVariants.NBT_KEY).split(":");
+            String[] parent1VariantId = parent1Nbt.getString(MoreMobVariants.NBT_KEY, "").split(":");
             MobVariant parent1Variant = Variants.getVariant(mob, Identifier.of(parent1VariantId[0], parent1VariantId[1]));
-            String[] parent2VariantId = parent2Nbt.getString(MoreMobVariants.NBT_KEY).split(":");
+            String[] parent2VariantId = parent2Nbt.getString(MoreMobVariants.NBT_KEY, "").split(":");
             MobVariant parent2Variant = Variants.getVariant(mob, Identifier.of(parent2VariantId[0], parent2VariantId[1]));
 
             return Variants.getRandomVariant(mob, world.getRandom().nextLong(), world.getBiome(parent1.getBlockPos()), new BreedingResultData(parent1Variant, parent2Variant), null);
@@ -307,11 +316,14 @@ public class Variants {
         )));
         defaultVariants.put(EntityType.CHICKEN, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("midnight"), 1),
-                new MobVariant(MoreMobVariants.id("amber"), 2),
-                new MobVariant(MoreMobVariants.id("gold_crested"), 2),
+                new MobVariant(MoreMobVariants.id("amber"), 2)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
+                new MobVariant(MoreMobVariants.id("gold_crested"), 2)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("bronzed"), 2),
                 new MobVariant(MoreMobVariants.id("skewbald"), 2),
-                new MobVariant(MoreMobVariants.id("stormy"), 2),
+                new MobVariant(MoreMobVariants.id("stormy"), 2)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_COLD_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("bone"), 2)
                         .addModifier(new SpawnableBiomesModifier(BiomeTags.IS_NETHER)),
                 new MobVariant(MoreMobVariants.id("duck"), 1)
@@ -325,8 +337,10 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("cookie"), 2),
                 new MobVariant(MoreMobVariants.id("dairy"), 2),
                 new MobVariant(MoreMobVariants.id("pinto"), 2),
-                new MobVariant(MoreMobVariants.id("sunset"), 2),
-                new MobVariant(MoreMobVariants.id("wooly"), 2),
+                new MobVariant(MoreMobVariants.id("sunset"), 2)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
+                new MobVariant(MoreMobVariants.id("wooly"), 2)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_COLD_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("albino"), 1)
                         .addModifier(new ShinyModifier())
                         .addModifier(new DiscardableModifier(0.9))
@@ -337,10 +351,12 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("default"), 3)
         )));
         defaultVariants.put(EntityType.PIG, new ArrayList<>(List.of(
-                new MobVariant(MoreMobVariants.id("mottled"), 1),
+                new MobVariant(MoreMobVariants.id("mottled"), 1)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("piebald"), 1),
                 new MobVariant(MoreMobVariants.id("pink_footed"), 1),
-                new MobVariant(MoreMobVariants.id("sooty"), 1),
+                new MobVariant(MoreMobVariants.id("sooty"), 1)
+                        .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_COLD_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("spotted"), 1),
                 new MobVariant(MoreMobVariants.id("default"), 2)
         )));

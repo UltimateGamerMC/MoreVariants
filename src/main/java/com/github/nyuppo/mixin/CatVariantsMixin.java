@@ -10,45 +10,57 @@ import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.CatEntity;
+import net.minecraft.entity.passive.CatVariants;
 import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.StructureTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.entity.passive.CatVariant;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(CatEntity.class)
-public class CatVariantsMixin extends MobEntityVariantsMixin {
+public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
     private MobVariant variant = Variants.getDefaultVariant(EntityType.CAT);
 
+    @Invoker("setVariant")
+    abstract void invokeSetVariant(RegistryEntry<CatVariant> variant);
+
     @Override
-    protected void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        nbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+    protected void onWriteCustomData(WriteView view, CallbackInfo ci) {
+        view.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
     }
 
     @Override
-    protected void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (!nbt.getString(MoreMobVariants.NBT_KEY).isEmpty()) {
-            if (nbt.getString(MoreMobVariants.NBT_KEY).contains(":")) {
-                variant = Variants.getVariant(EntityType.CAT, Identifier.of(nbt.getString(MoreMobVariants.NBT_KEY)));
+    protected void onReadCustomData(ReadView view, CallbackInfo ci) {
+        String variantStr = view.getString(MoreMobVariants.NBT_KEY, "");
+        if (!variantStr.isEmpty()) {
+            if (variantStr.contains(":")) {
+                variant = Variants.getVariant(EntityType.CAT, Identifier.of(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.CAT, MoreMobVariants.id(nbt.getString(MoreMobVariants.NBT_KEY)));
+                variant = Variants.getVariant(EntityType.CAT, MoreMobVariants.id(variantStr));
             }
         } else {
-            variant = Variants.getRandomVariant(EntityType.CAT, ((CatEntity)(Object)this).getRandom().nextLong(), ((CatEntity)(Object)this).getWorld().getBiome(((CatEntity)(Object)this).getBlockPos()), null, ((CatEntity)(Object)this).getWorld().getMoonSize());
+            Entity e = (Entity)(Object)this;
+            World w = e.getEntityWorld();
+            Float moonSize = w instanceof ServerWorld ? ((ServerWorld)w).getMoonSize(e.getBlockPos()) : null;
+            variant = Variants.getRandomVariant(EntityType.CAT, ((CatEntity)(Object)this).getRandom().nextLong(), w.getBiome(((CatEntity)(Object)this).getBlockPos()), null, moonSize);
         }
-
-        // Update all players in the event that this is from modifying entity data with a command
-        // This should be fine since the packet is so small anyways
-        MinecraftServer server = ((Entity)(Object)this).getServer();
+        invokeSetVariant(((CatEntity)(Object)this).getRegistryManager().getOrThrow(RegistryKeys.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
+        MinecraftServer server = ((Entity)(Object)this).getEntityWorld().getServer();
         if (server != null) {
             server.getPlayerManager().getPlayerList().forEach((player) -> {
                 ServerPlayNetworking.send(player, new ServerRespondBasicVariantPayload(((Entity)(Object)this).getId(), variant.getIdentifier().toString()));
@@ -58,9 +70,7 @@ public class CatVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onInitialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, CallbackInfoReturnable<EntityData> ci) {
-        variant = Variants.getRandomVariant(EntityType.CAT, ((CatEntity)(Object)this).getRandom().nextLong(), world.getBiome(((CatEntity)(Object)this).getBlockPos()), null, world.getMoonSize());
-
-        // Check if we should spawn black cats (witch huts)
+        variant = Variants.getRandomVariant(EntityType.CAT, ((CatEntity)(Object)this).getRandom().nextLong(), world.getBiome(((CatEntity)(Object)this).getBlockPos()), null, world.toServerWorld().getMoonSize(((CatEntity)(Object)this).getBlockPos()));
         if (world.toServerWorld().getStructureAccessor().getStructureContaining(((CatEntity) (Object) this).getBlockPos(), StructureTags.CATS_SPAWN_AS_BLACK).hasChildren()) {
             MobVariant allBlack = Variants.getVariantNullable(EntityType.CAT, Identifier.ofVanilla("all_black"));
             if (allBlack != null) {
@@ -68,6 +78,10 @@ public class CatVariantsMixin extends MobEntityVariantsMixin {
                 ((CatEntity) (Object) this).setPersistent();
             }
         }
+        var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
+        data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
+        invokeSetVariant(world.toServerWorld().getRegistryManager().getOrThrow(RegistryKeys.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
     }
 
     @Inject(
@@ -76,13 +90,10 @@ public class CatVariantsMixin extends MobEntityVariantsMixin {
     )
     private void onCreateChild(ServerWorld world, PassiveEntity entity, CallbackInfoReturnable<CatEntity> ci) {
         CatEntity child = ci.getReturnValue();
-
         MobVariant variant = Variants.getChildVariant(EntityType.CAT, world, ((CatEntity)(Object)this), entity);
-
-        // Write variant to child's NBT
-        NbtCompound childNbt = new NbtCompound();
-        child.writeNbt(childNbt);
-        childNbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
-        child.readCustomDataFromNbt(childNbt);
+        ((CatVariantsMixin)(Object)child).invokeSetVariant(world.getRegistryManager().getOrThrow(RegistryKeys.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
+        var childData = MoreMobVariants.getCustomDataNbt(child);
+        childData.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        MoreMobVariants.setCustomDataNbt(child, childData);
     }
 }

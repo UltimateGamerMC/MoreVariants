@@ -1,6 +1,7 @@
 package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.MoreMobVariants;
+import com.github.nyuppo.client.render.MMVLivingRenderState;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.variant.MobVariant;
 import net.minecraft.client.render.entity.ZombieBaseEntityRenderer;
@@ -11,32 +12,43 @@ import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.client.render.entity.state.ZombieEntityRenderState;
 
 @Mixin(ZombieBaseEntityRenderer.class)
 public class ZombieRendererMixin {
     private static final Identifier DEFAULT = Identifier.ofVanilla("textures/entity/zombie/zombie.png");
 
-    @Inject(method = "getTexture", at = @At("HEAD"), cancellable = true)
-    private void onGetTexture(ZombieEntity zombieEntity, CallbackInfoReturnable<Identifier> ci) {
-        NbtCompound nbt = new NbtCompound();
-        zombieEntity.writeNbt(nbt);
+    @Inject(method = "updateRenderState", at = @At("RETURN"))
+    private void onUpdateRenderState(ZombieEntity entity, ZombieEntityRenderState state, float tickDelta, CallbackInfo ci) {
+        NbtCompound nbt = MoreMobVariants.getCustomDataNbt(entity);
+        MMVLivingRenderState ext = (MMVLivingRenderState) state;
+        ext.setMmvVariantId(nbt.getString(MoreMobVariants.NBT_KEY, ""));
+        ext.setMmvTextureOverride(null);
+        if (entity.hasCustomName()) {
+            MobVariant v = Variants.getVariantFromNametag(EntityType.ZOMBIE, entity.getName().getString());
+            if (v != null) {
+                Identifier id = v.getIdentifier();
+                ext.setMmvTextureOverride(Identifier.of(id.getNamespace(), "textures/entity/zombie/" + id.getPath() + ".png"));
+            }
+        }
+    }
 
-        if (nbt.contains(MoreMobVariants.NBT_KEY)) {
-            String variant = nbt.getString(MoreMobVariants.NBT_KEY);
-            if (variant.equals(MoreMobVariants.id("default").toString()) || variant.isEmpty()) {
+    @Inject(method = "getTexture(Lnet/minecraft/client/render/entity/state/ZombieEntityRenderState;)Lnet/minecraft/util/Identifier;", at = @At("HEAD"), cancellable = true)
+    private void onGetTexture(ZombieEntityRenderState state, CallbackInfoReturnable<Identifier> ci) {
+        MMVLivingRenderState ext = (MMVLivingRenderState) state;
+        if (ext.getMmvTextureOverride() != null) {
+            ci.setReturnValue(ext.getMmvTextureOverride());
+            return;
+        }
+        String variant = ext.getMmvVariantId();
+        if (variant != null && !variant.isEmpty()) {
+            if (variant.equals(MoreMobVariants.id("default").toString())) {
                 ci.setReturnValue(DEFAULT);
             } else {
                 String[] split = Variants.splitVariant(variant);
                 ci.setReturnValue(Identifier.of(split[0], "textures/entity/zombie/" + split[1] + ".png"));
-            }
-        }
-
-        if (zombieEntity.hasCustomName()) {
-            MobVariant variant = Variants.getVariantFromNametag(EntityType.ZOMBIE, zombieEntity.getName().getString());
-            if (variant != null) {
-                Identifier identifier = variant.getIdentifier();
-                ci.setReturnValue(Identifier.of(identifier.getNamespace(), "textures/entity/zombie/" + identifier.getPath() + ".png"));
             }
         }
     }

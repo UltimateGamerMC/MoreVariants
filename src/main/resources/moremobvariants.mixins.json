@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.github.nyuppo.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MobEntityVariantsMixin",
     "CatVariantsMixin",
@@ -17,12 +17,18 @@
     "ZombieVariantsMixin"
   ],
   "client": [
+    "EntityModelLayersMixin",
+    "EntityModelsMixin",
+    "LivingEntityRenderStateMixin",
+    "SheepEntityRenderStateMixin",
+    "PigEntityRenderStateMixin",
     "CatRendererMixin",
     "CatFluffMixin",
     "ChickenRendererMixin",
     "PigRendererMixin",
     "SheepRendererMixin",
     "SkeletonRendererMixin",
+    "SkeletonGetTextureMixin",
     "SpiderRendererMixin",
     "CowRendererMixin",
     "WolfRendererMixin",

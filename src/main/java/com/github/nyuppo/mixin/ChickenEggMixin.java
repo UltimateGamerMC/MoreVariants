@@ -6,7 +6,7 @@ import com.github.nyuppo.variant.MobVariant;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.projectile.thrown.EggEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -18,13 +18,12 @@ public class ChickenEggMixin {
             at = @At("STORE")
     )
     private ChickenEntity mixin(ChickenEntity chickenEntity) {
-        MobVariant variant = Variants.getRandomVariant(EntityType.CHICKEN, chickenEntity.getRandom().nextLong(), chickenEntity.getWorld().getBiome(chickenEntity.getBlockPos()), null, chickenEntity.getWorld().getMoonSize());
-
-        NbtCompound newNbt = new NbtCompound();
-        chickenEntity.writeNbt(newNbt);
-        newNbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
-        chickenEntity.readCustomDataFromNbt(newNbt);
-
+        if (chickenEntity.getEntityWorld() instanceof ServerWorld world) {
+            MobVariant variant = Variants.getRandomVariant(EntityType.CHICKEN, chickenEntity.getRandom().nextLong(), world.getBiome(chickenEntity.getBlockPos()), null, world.getMoonSize(chickenEntity.getBlockPos()));
+            var data = MoreMobVariants.getCustomDataNbt(chickenEntity);
+            data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+            MoreMobVariants.setCustomDataNbt(chickenEntity, data);
+        }
         return chickenEntity;
     }
 }

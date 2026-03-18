@@ -12,12 +12,14 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.SheepEntity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,27 +33,28 @@ public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
     private String hornColour = "";
 
     @Override
-    protected void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        nbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
-        nbt.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
+    protected void onWriteCustomData(WriteView view, CallbackInfo ci) {
+        view.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        view.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
     }
 
     @Override
-    protected void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (!nbt.getString(MoreMobVariants.NBT_KEY).isEmpty()) {
-            if (nbt.getString(MoreMobVariants.NBT_KEY).contains(":")) {
-                variant = Variants.getVariant(EntityType.SHEEP, Identifier.of(nbt.getString(MoreMobVariants.NBT_KEY)));
+    protected void onReadCustomData(ReadView view, CallbackInfo ci) {
+        String variantStr = view.getString(MoreMobVariants.NBT_KEY, "");
+        if (!variantStr.isEmpty()) {
+            if (variantStr.contains(":")) {
+                variant = Variants.getVariant(EntityType.SHEEP, Identifier.of(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.SHEEP, MoreMobVariants.id(nbt.getString(MoreMobVariants.NBT_KEY)));
+                variant = Variants.getVariant(EntityType.SHEEP, MoreMobVariants.id(variantStr));
             }
         } else {
-            variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), ((SheepEntity)(Object)this).getWorld().getBiome(((SheepEntity)(Object)this).getBlockPos()), null, ((SheepEntity)(Object)this).getWorld().getMoonSize());
+            Entity e = (Entity)(Object)this;
+            World w = e.getEntityWorld();
+            Float moonSize = w instanceof ServerWorld ? ((ServerWorld)w).getMoonSize(e.getBlockPos()) : null;
+            variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), w.getBiome(((SheepEntity)(Object)this).getBlockPos()), null, moonSize);
         }
-        hornColour = nbt.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY);
-
-        // Update all players in the event that this is from modifying entity data with a command
-        // This should be fine since the packet is so small anyways
-        MinecraftServer server = ((Entity)(Object)this).getServer();
+        hornColour = view.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
+        MinecraftServer server = ((Entity)(Object)this).getEntityWorld().getServer();
         if (server != null) {
             server.getPlayerManager().getPlayerList().forEach((player) -> {
                 ServerPlayNetworking.send(player, new ServerRespondVariantPayload(((Entity)(Object)this).getId(), variant.getIdentifier().toString(), false, 0, hornColour));
@@ -61,12 +64,15 @@ public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onInitialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, CallbackInfoReturnable<EntityData> ci) {
-        variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()), null, world.getMoonSize());
-
+        variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()), null, world.toServerWorld().getMoonSize(((SheepEntity)(Object)this).getBlockPos()));
         SheepHornSettings.SheepHornColour colour = SheepHornSettings.getRandomSheepHornColour(((SheepEntity)(Object)this).getRandom(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()));
         if (colour != null) {
             hornColour = colour.getId();
         }
+        var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
+        data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        data.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
+        MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
     }
 
     @Inject(
@@ -75,34 +81,23 @@ public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
     )
     private void onCreateChild(ServerWorld world, PassiveEntity entity, CallbackInfoReturnable<SheepEntity> ci) {
         SheepEntity child = ci.getReturnValue();
-
         MobVariant variant = Variants.getChildVariant(EntityType.SHEEP, world, ((SheepEntity)(Object)this), entity);
-
-        // Determine horn colour
-        NbtCompound nbtParent1 = new NbtCompound();
-        ((SheepEntity)(Object)this).writeCustomDataToNbt(nbtParent1);
-        NbtCompound nbtParent2 = new NbtCompound();
-        entity.writeCustomDataToNbt(nbtParent2);
-
+        var nbtParent1 = MoreMobVariants.getCustomDataNbt((SheepEntity)(Object)this);
+        var nbtParent2 = MoreMobVariants.getCustomDataNbt(entity);
         String colour = "";
-        if (nbtParent1.contains(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY)
-                && !nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY).isEmpty()
-                && nbtParent2.contains(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY)
-                && !nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY).isEmpty()
+        if (!nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
+                && !nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
                 && entity.getRandom().nextDouble() <= SheepHornSettings.getInheritChance()) {
-            colour = entity.getRandom().nextBoolean() ? nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY) : nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY);
+            colour = entity.getRandom().nextBoolean() ? nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "") : nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
         } else {
             SheepHornSettings.SheepHornColour col = SheepHornSettings.getRandomSheepHornColour(entity.getRandom(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()));
             if (col != null) {
                 colour = col.getId();
             }
         }
-
-        // Write variant to child's NBT
-        NbtCompound childNbt = new NbtCompound();
-        child.writeNbt(childNbt);
-        childNbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
-        childNbt.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, colour);
-        child.readCustomDataFromNbt(childNbt);
+        var childData = MoreMobVariants.getCustomDataNbt(child);
+        childData.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        childData.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, colour);
+        MoreMobVariants.setCustomDataNbt(child, childData);
     }
 }

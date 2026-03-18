@@ -3,7 +3,8 @@ package com.github.nyuppo.mixin;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import org.jetbrains.annotations.Nullable;
@@ -16,19 +17,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MobEntity.class)
 public abstract class MobEntityVariantsMixin {
     @Inject(
-            method = "writeCustomDataToNbt",
+            method = "writeCustomData",
             at = @At("RETURN")
     )
-    protected void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-
+    protected void onWriteCustomData(WriteView view, CallbackInfo ci) {
     }
 
     @Inject(
-            method = "readCustomDataFromNbt",
+            method = "readCustomData",
             at = @At("RETURN")
     )
-    protected void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-
+    protected void onReadCustomData(ReadView view, CallbackInfo ci) {
     }
 
     @Inject(

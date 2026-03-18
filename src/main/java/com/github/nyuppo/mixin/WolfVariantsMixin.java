@@ -11,43 +11,63 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.WolfEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.entity.passive.WolfVariants;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.entity.passive.WolfVariant;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WolfEntity.class)
-public class WolfVariantsMixin extends MobEntityVariantsMixin {
+public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
     private MobVariant variant = Variants.getDefaultVariant(EntityType.WOLF);
 
+    @Invoker("setVariant")
+    abstract void invokeSetVariant(RegistryEntry<WolfVariant> variant);
+
     @Override
-    protected void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        nbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+    protected void onWriteCustomData(WriteView view, CallbackInfo ci) {
+        view.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
     }
 
     @Override
-    protected void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (!nbt.getString(MoreMobVariants.NBT_KEY).isEmpty()) {
-            if (nbt.getString(MoreMobVariants.NBT_KEY).contains(":")) {
-                variant = Variants.getVariant(EntityType.WOLF, Identifier.of(nbt.getString(MoreMobVariants.NBT_KEY)));
+    protected void onReadCustomData(ReadView view, CallbackInfo ci) {
+        String variantStr = view.getString(MoreMobVariants.NBT_KEY, "");
+        boolean hasModVariant = false;
+        if (!variantStr.isEmpty()) {
+            hasModVariant = true;
+            if (variantStr.contains(":")) {
+                variant = Variants.getVariant(EntityType.WOLF, Identifier.of(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.WOLF, MoreMobVariants.id(nbt.getString(MoreMobVariants.NBT_KEY)));
+                variant = Variants.getVariant(EntityType.WOLF, MoreMobVariants.id(variantStr));
             }
         } else {
-            variant = Variants.getRandomVariant(EntityType.WOLF, ((WolfEntity)(Object)this).getRandom().nextLong(), ((WolfEntity)(Object)this).getWorld().getBiome(((WolfEntity)(Object)this).getBlockPos()), null, ((WolfEntity)(Object)this).getWorld().getMoonSize());
+            Entity e = (Entity)(Object)this;
+            World w = e.getEntityWorld();
+            if (MoreMobVariants.isTemperateBiome(w.getBiome(((WolfEntity)(Object)this).getBlockPos()))) {
+                hasModVariant = true;
+                Float moonSize = w instanceof ServerWorld ? ((ServerWorld)w).getMoonSize(e.getBlockPos()) : null;
+                variant = Variants.getRandomVariant(EntityType.WOLF, ((WolfEntity)(Object)this).getRandom().nextLong(), w.getBiome(((WolfEntity)(Object)this).getBlockPos()), null, moonSize);
+            }
         }
-
-        // Update all players in the event that this is from modifying entity data with a command
-        // This should be fine since the packet is so small anyways
-        MinecraftServer server = ((Entity)(Object)this).getServer();
+        if (!hasModVariant) {
+            return;
+        }
+        invokeSetVariant(((WolfEntity)(Object)this).getRegistryManager().getOrThrow(RegistryKeys.WOLF_VARIANT).getOrThrow(WolfVariants.DEFAULT));
+        MinecraftServer server = ((Entity)(Object)this).getEntityWorld().getServer();
         if (server != null) {
             server.getPlayerManager().getPlayerList().forEach((player) -> {
                 ServerPlayNetworking.send(player, new ServerRespondBasicVariantPayload(((Entity)(Object)this).getId(), variant.getIdentifier().toString()));
@@ -57,7 +77,14 @@ public class WolfVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onInitialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, CallbackInfoReturnable<EntityData> ci) {
-        variant = Variants.getRandomVariant(EntityType.WOLF, ((WolfEntity)(Object)this).getRandom().nextLong(), world.getBiome(((WolfEntity)(Object)this).getBlockPos()), null, world.getMoonSize());
+        if (!MoreMobVariants.isTemperateBiome(world.getBiome(((WolfEntity)(Object)this).getBlockPos()))) {
+            return;
+        }
+        variant = Variants.getRandomVariant(EntityType.WOLF, ((WolfEntity)(Object)this).getRandom().nextLong(), world.getBiome(((WolfEntity)(Object)this).getBlockPos()), null, world.toServerWorld().getMoonSize(((WolfEntity)(Object)this).getBlockPos()));
+        var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
+        data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
+        invokeSetVariant(world.toServerWorld().getRegistryManager().getOrThrow(RegistryKeys.WOLF_VARIANT).getOrThrow(WolfVariants.DEFAULT));
     }
 
     @Inject(
@@ -66,13 +93,12 @@ public class WolfVariantsMixin extends MobEntityVariantsMixin {
     )
     private void onCreateChild(ServerWorld world, PassiveEntity entity, CallbackInfoReturnable<WolfEntity> ci) {
         WolfEntity child = ci.getReturnValue();
-
+        if (child == null) return;
+        if (!MoreMobVariants.isTemperateBiome(world.getBiome(child.getBlockPos()))) return;
         MobVariant variant = Variants.getChildVariant(EntityType.WOLF, world, ((WolfEntity)(Object)this), entity);
-
-        // Write variant to child's NBT
-        NbtCompound childNbt = new NbtCompound();
-        child.writeNbt(childNbt);
-        childNbt.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
-        child.readCustomDataFromNbt(childNbt);
+        ((WolfVariantsMixin)(Object)child).invokeSetVariant(world.getRegistryManager().getOrThrow(RegistryKeys.WOLF_VARIANT).getOrThrow(WolfVariants.DEFAULT));
+        var childData = MoreMobVariants.getCustomDataNbt(child);
+        childData.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+        MoreMobVariants.setCustomDataNbt(child, childData);
     }
 }
