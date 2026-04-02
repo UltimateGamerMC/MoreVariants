@@ -1,33 +1,27 @@
 package com.github.nyuppo.networking;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record ServerRespondVariantPayload(int entityId, String variant, boolean sittingOrMuddy, int muddyTimeout, String sheepHornColour) implements CustomPayload {
-    public static final Id<ServerRespondVariantPayload> ID = new Id<>(MMVNetworkingConstants.SERVER_RESPOND_VARIANT_ID);
-    public static final PacketCodec<PacketByteBuf, ServerRespondVariantPayload> PACKET_CODEC = PacketCodec.of(ServerRespondVariantPayload::write, ServerRespondVariantPayload::read);
+public record ServerRespondVariantPayload(int entityId, String variant, boolean sittingOrMuddy, int muddyTimeout, String sheepHornColour) implements CustomPacketPayload {
+	public static final CustomPacketPayload.Type<ServerRespondVariantPayload> TYPE = new CustomPacketPayload.Type<>(MMVNetworkingConstants.SERVER_RESPOND_VARIANT_ID);
+	public static final StreamCodec<RegistryFriendlyByteBuf, ServerRespondVariantPayload> CODEC = CustomPacketPayload.codec(ServerRespondVariantPayload::write, ServerRespondVariantPayload::new);
 
-    private static ServerRespondVariantPayload read(PacketByteBuf buf) {
-        return new ServerRespondVariantPayload(
-                buf.readInt(),
-                buf.readString(),
-                buf.readBoolean(),
-                buf.readVarInt(),
-                buf.readString()
-        );
-    }
+	private ServerRespondVariantPayload(RegistryFriendlyByteBuf buf) {
+		this(buf.readInt(), buf.readUtf(), buf.readBoolean(), buf.readInt(), buf.readUtf());
+	}
 
-    private void write(PacketByteBuf buf) {
-        buf.writeInt(entityId);
-        buf.writeString(variant);
-        buf.writeBoolean(sittingOrMuddy);
-        buf.writeVarInt(muddyTimeout);
-        buf.writeString(sheepHornColour);
-    }
+	private void write(RegistryFriendlyByteBuf buf) {
+		buf.writeInt(entityId);
+		buf.writeUtf(variant);
+		buf.writeBoolean(sittingOrMuddy);
+		buf.writeInt(muddyTimeout);
+		buf.writeUtf(sheepHornColour);
+	}
 
-    @Override
-    public Id<? extends CustomPayload> getId() {
-        return ID;
-    }
+	@Override
+	public Type<? extends CustomPacketPayload> type() {
+		return TYPE;
+	}
 }

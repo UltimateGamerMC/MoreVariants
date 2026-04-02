@@ -1,7 +1,7 @@
 package com.github.nyuppo.util;
 
 import com.github.nyuppo.variant.MobVariant;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.util.RandomSource;
 
 public record BreedingResultData(MobVariant parent1, MobVariant parent2) {
     public boolean validParents(MobVariant parent1, MobVariant parent2) {

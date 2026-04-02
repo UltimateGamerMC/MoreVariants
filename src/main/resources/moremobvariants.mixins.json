@@ -17,8 +17,7 @@
     "ZombieVariantsMixin"
   ],
   "client": [
-    "EntityModelLayersMixin",
-    "EntityModelsMixin",
+    "LayerDefinitionsMixin",
     "LivingEntityRenderStateMixin",
     "SheepEntityRenderStateMixin",
     "PigEntityRenderStateMixin",

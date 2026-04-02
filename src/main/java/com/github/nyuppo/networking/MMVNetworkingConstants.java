@@ -1,7 +1,7 @@
 package com.github.nyuppo.networking;
 
 import com.github.nyuppo.MoreMobVariants;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class MMVNetworkingConstants {
     public static final Identifier CLIENT_REQUEST_VARIANT_ID = MoreMobVariants.id("client_request");

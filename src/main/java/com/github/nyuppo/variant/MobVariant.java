@@ -1,11 +1,11 @@
 package com.github.nyuppo.variant;
 
 import com.github.nyuppo.MoreMobVariants;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.TagKey;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -66,14 +66,14 @@ public class MobVariant {
     public Identifier getCustomVariantName() {
         for (VariantModifier modifier : this.modifiers) {
             if (modifier instanceof CustomVariantNameModifier) {
-                return Identifier.of(this.identifier.getNamespace(), ((CustomVariantNameModifier) modifier).variantName());
+                return Identifier.fromNamespaceAndPath(this.identifier.getNamespace(), ((CustomVariantNameModifier) modifier).variantName());
             }
         }
 
         return MoreMobVariants.id("default");
     }
 
-    public boolean shouldDiscard(Random random) {
+    public boolean shouldDiscard(RandomSource random) {
         for (VariantModifier modifier : this.modifiers) {
             if (modifier instanceof DiscardableModifier) {
                 return ((DiscardableModifier) modifier).shouldDiscard(random);
@@ -82,7 +82,7 @@ public class MobVariant {
         return false;
     }
 
-    public boolean isInSpawnBiome(RegistryEntry<Biome> biome) {
+    public boolean isInSpawnBiome(Holder<Biome> biome) {
         for (VariantModifier modifier : this.modifiers) {
             if (modifier instanceof SpawnableBiomesModifier) {
                 return ((SpawnableBiomesModifier) modifier).canSpawnInBiome(biome);
@@ -100,7 +100,7 @@ public class MobVariant {
         return false;
     }
 
-    public boolean shouldBreed(Random random) {
+    public boolean shouldBreed(RandomSource random) {
         for (VariantModifier modifier : this.modifiers) {
             if (modifier instanceof BreedingResultModifier) {
                 return ((BreedingResultModifier) modifier).shouldBreed(random);

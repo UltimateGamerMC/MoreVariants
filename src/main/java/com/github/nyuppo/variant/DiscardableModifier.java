@@ -1,9 +1,9 @@
 package com.github.nyuppo.variant;
 
-import net.minecraft.util.math.random.Random;
+import net.minecraft.util.RandomSource;
 
 public record DiscardableModifier(double discardChance) implements VariantModifier {
-    public boolean shouldDiscard(Random random) {
+    public boolean shouldDiscard(RandomSource random) {
         return random.nextDouble() < this.discardChance;
     }
 }

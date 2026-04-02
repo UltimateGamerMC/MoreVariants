@@ -1,26 +1,25 @@
 package com.github.nyuppo.networking;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.UUID;
 
-public record ClientRequestVariantPayload(UUID uuid) implements CustomPayload {
-    public static final Id<ClientRequestVariantPayload> ID = new Id<>(MMVNetworkingConstants.CLIENT_REQUEST_VARIANT_ID);
-    public static final PacketCodec<PacketByteBuf, ClientRequestVariantPayload> PACKET_CODEC = PacketCodec.of(ClientRequestVariantPayload::write, ClientRequestVariantPayload::read);
+public record ClientRequestVariantPayload(UUID uuid) implements CustomPacketPayload {
+	public static final CustomPacketPayload.Type<ClientRequestVariantPayload> TYPE = new CustomPacketPayload.Type<>(MMVNetworkingConstants.CLIENT_REQUEST_VARIANT_ID);
+	public static final StreamCodec<RegistryFriendlyByteBuf, ClientRequestVariantPayload> CODEC = CustomPacketPayload.codec(ClientRequestVariantPayload::write, ClientRequestVariantPayload::new);
 
-    private static ClientRequestVariantPayload read(PacketByteBuf buf) {
-        UUID uuid = buf.readUuid();
-        return new ClientRequestVariantPayload(uuid);
-    }
+	private ClientRequestVariantPayload(RegistryFriendlyByteBuf buf) {
+		this(buf.readUUID());
+	}
 
-    private void write(PacketByteBuf buf) {
-        buf.writeUuid(uuid);
-    }
+	private void write(RegistryFriendlyByteBuf buf) {
+		buf.writeUUID(uuid);
+	}
 
-    @Override
-    public Id<? extends CustomPayload> getId() {
-        return ID;
-    }
+	@Override
+	public Type<? extends CustomPacketPayload> type() {
+		return TYPE;
+	}
 }

@@ -1,12 +1,12 @@
 package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.client.render.MMVSheepRenderState;
-import net.minecraft.client.render.entity.state.SheepEntityRenderState;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.entity.state.SheepRenderState;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(SheepEntityRenderState.class)
+@Mixin(SheepRenderState.class)
 public class SheepEntityRenderStateMixin implements MMVSheepRenderState {
     @Unique
     private String moremobvariantsVariantId = "";

@@ -1,25 +1,22 @@
 package com.github.nyuppo.client.render.entity.model;
 
+import com.github.nyuppo.mixin.PigModelInvoker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.model.Dilation;
-import net.minecraft.client.model.ModelData;
-import net.minecraft.client.model.ModelPart;
-import net.minecraft.client.model.TexturedModelData;
-import net.minecraft.client.render.entity.model.PigEntityModel;
+import net.minecraft.client.model.animal.pig.PigModel;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
 
 @Environment(EnvType.CLIENT)
-public class LegacyPigEntityModel extends PigEntityModel {
-    public LegacyPigEntityModel(ModelPart root) {
-        super(root);
-    }
+public final class LegacyPigEntityModel {
+	private LegacyPigEntityModel() {
+	}
 
-    public static TexturedModelData getTexturedModelData() {
-        return TexturedModelData.of(getModelData(), 64, 32);
-    }
+	public static LayerDefinition createLayerDefinition() {
+		return LayerDefinition.create(PigModelInvoker.mmv_createBasePigModel(CubeDeformation.NONE), 64, 32);
+	}
 
-    public static ModelData getModelData() {
-        return PigEntityModel.getModelData(Dilation.NONE);
-    }
+	public static LayerDefinition createBabyLayerDefinition() {
+		return createLayerDefinition().apply(PigModel.BABY_TRANSFORMER);
+	}
 }
-

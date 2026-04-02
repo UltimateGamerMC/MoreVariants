@@ -1,26 +1,24 @@
 package com.github.nyuppo.client.render.entity.feature;
 
 import com.github.nyuppo.mixin.QuadrupedEntityModelPartAccessor;
-import net.minecraft.client.model.ModelPart;
-import net.minecraft.client.render.entity.feature.FeatureRendererContext;
-import net.minecraft.client.render.entity.model.EntityModel;
-import net.minecraft.client.render.entity.model.SheepEntityModel;
-import net.minecraft.client.render.entity.state.SheepEntityRenderState;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.animal.sheep.SheepModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.entity.RenderLayerParent;
+import net.minecraft.client.renderer.entity.state.SheepRenderState;
 
-import java.util.Collections;
-import java.util.Map;
+public class SheepHornsModel extends EntityModel<SheepRenderState> {
+	private final RenderLayerParent<SheepRenderState, SheepModel> parent;
 
-public class SheepHornsModel extends EntityModel<SheepEntityRenderState> {
-    private final FeatureRendererContext<SheepEntityRenderState, SheepEntityModel> context;
+	public SheepHornsModel(RenderLayerParent<SheepRenderState, SheepModel> parent, ModelPart root) {
+		super(root);
+		this.parent = parent;
+	}
 
-    public SheepHornsModel(FeatureRendererContext<SheepEntityRenderState, SheepEntityModel> context, ModelPart hornsPart) {
-        super(new ModelPart(Collections.emptyList(), Map.of("horns", hornsPart)));
-        this.context = context;
-    }
-
-    @Override
-    public void setAngles(SheepEntityRenderState state) {
-        ModelPart head = ((QuadrupedEntityModelPartAccessor) context.getModel()).getHead();
-        this.root.getChild("horns").setTransform(head.getTransform());
-    }
+	@Override
+	public void setupAnim(SheepRenderState state) {
+		SheepModel sheep = parent.getModel();
+		ModelPart head = ((QuadrupedEntityModelPartAccessor) (Object) sheep).mmv_getHead();
+		root().getChild("horns").loadPose(head.storePose());
+	}
 }

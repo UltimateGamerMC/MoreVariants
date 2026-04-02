@@ -5,13 +5,12 @@ import com.github.nyuppo.variant.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.biome.Biome;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,72 +18,67 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener {
-    private final Identifier SETTINGS_ID = Identifier.of(MoreMobVariants.MOD_ID, "settings/settings.json");
-    private final Identifier SHEEP_HORN_SETTINGS_ID = Identifier.of(MoreMobVariants.MOD_ID, "settings/sheep_horn_settings.json");
+public class ConfigDataLoader implements net.minecraft.server.packs.resources.ResourceManagerReloadListener {
+    private final Identifier SETTINGS_ID = Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "settings/settings.json");
+    private final Identifier SHEEP_HORN_SETTINGS_ID = Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "settings/sheep_horn_settings.json");
 
     @Override
-    public Identifier getFabricId() {
-        return Identifier.of(MoreMobVariants.MOD_ID, MoreMobVariants.MOD_ID);
-    }
-
-    @Override
-    public void reload(ResourceManager manager) {
+    public void onResourceManagerReload(ResourceManager manager) {
         MoreMobVariants.LOGGER.info("Reloading config...");
 
         Variants.clearAllVariants();
         Variants.initializeFromDefaults();
-        for (Identifier id : manager.findResources("variants", path -> path.getPath().endsWith(".json")).keySet()) {
+        for (Identifier id : manager.listResources("variants", loc -> loc.getPath().endsWith(".json")).keySet()) {
             String path = id.getPath().substring("variants/".length(), id.getPath().length() - ".json".length());
             String[] split = path.split("/");
             // mob id is stored in split[0] (i.e. "cow"), variant id is stored in split[1] (i.e. "dairy")
             // this pattern repeats a lot throughout this class and it's related classes, so hopefully you see this comment before all of that lol
 
             if (manager.getResource(id).isPresent()) {
-                try (InputStream stream = manager.getResource(id).get().getInputStream()) {
+                try (InputStream stream = manager.getResource(id).get().open()) {
                     applyVariant(new InputStreamReader(stream, StandardCharsets.UTF_8), id.getNamespace(), split[0], split[1]);
                 } catch (Exception e) {
-                    MoreMobVariants.LOGGER.error("Error occured while loading " + split[0] + " variant '" + split[1] + "' (" + id.toShortTranslationKey() + ")", e);
+                    MoreMobVariants.LOGGER.error("Error occured while loading " + split[0] + " variant '" + split[1] + "' (" + id.toString() + ")", e);
                 }
             } else {
-                MoreMobVariants.LOGGER.error(id.toShortTranslationKey() + " was not present.");
+                MoreMobVariants.LOGGER.error(id.toString() + " was not present.");
             }
         }
         Variants.validateEmptyVariants();
 
         VariantBlacklist.clearAllBlacklists();
-        for (Identifier id : manager.findResources("blacklist", path -> path.getPath().endsWith(".json")).keySet()) {
+        for (Identifier id : manager.listResources("blacklist", loc -> loc.getPath().endsWith(".json")).keySet()) {
             String mob = id.getPath().substring("blacklist/".length(), id.getPath().length() - ".json".length());
 
             if (manager.getResource(id).isPresent()) {
-                try (InputStream stream = manager.getResource(id).get().getInputStream()) {
+                try (InputStream stream = manager.getResource(id).get().open()) {
                     applyBlacklist(new InputStreamReader(stream, StandardCharsets.UTF_8), mob);
                 } catch (Exception e) {
-                    MoreMobVariants.LOGGER.error("Error occured while loading blacklist config " + id.toShortTranslationKey(), e);
+                    MoreMobVariants.LOGGER.error("Error occured while loading blacklist config " + id.toString(), e);
                     VariantBlacklist.clearBlacklist(Variants.getMob(mob));
                 }
             } else {
-                MoreMobVariants.LOGGER.error(id.toShortTranslationKey() + " was not present.");
+                MoreMobVariants.LOGGER.error(id.toString() + " was not present.");
             }
         }
         Variants.applyBlacklists();
 
         Optional<Resource> settings = manager.getResource(SETTINGS_ID);
         if (settings.isPresent()) {
-            try (InputStream stream = manager.getResource(SETTINGS_ID).get().getInputStream()) {
+            try (InputStream stream = manager.getResource(SETTINGS_ID).get().open()) {
                 applySettings(new InputStreamReader(stream, StandardCharsets.UTF_8));
             } catch (Exception e) {
-                MoreMobVariants.LOGGER.error("Error occured while loading settings config " + SETTINGS_ID.toShortTranslationKey(), e);
+                MoreMobVariants.LOGGER.error("Error occured while loading settings config " + SETTINGS_ID.toString(), e);
                 VariantSettings.resetSettings();
             }
         }
 
         Optional<Resource> sheepHornSettings = manager.getResource(SHEEP_HORN_SETTINGS_ID);
         if (sheepHornSettings.isPresent()) {
-            try (InputStream stream = manager.getResource(SHEEP_HORN_SETTINGS_ID).get().getInputStream()) {
+            try (InputStream stream = manager.getResource(SHEEP_HORN_SETTINGS_ID).get().open()) {
                 applySheepHornSettings(new InputStreamReader(stream, StandardCharsets.UTF_8));
             } catch (Exception e) {
-                MoreMobVariants.LOGGER.error("Error occured while loading sheep horn settings config " + SHEEP_HORN_SETTINGS_ID.toShortTranslationKey(), e);
+                MoreMobVariants.LOGGER.error("Error occured while loading sheep horn settings config " + SHEEP_HORN_SETTINGS_ID.toString(), e);
                 SheepHornSettings.resetSettings();
             }
         }
@@ -123,7 +117,7 @@ public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener
 
             if (element.getAsJsonObject().has("biome_tag")) {
                 String[] biomesIdentifier = element.getAsJsonObject().get("biome_tag").getAsString().split(":");
-                TagKey<Biome> biomes = TagKey.of(RegistryKeys.BIOME, Identifier.of(biomesIdentifier[0], biomesIdentifier[1]));
+                TagKey<Biome> biomes = TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath(biomesIdentifier[0], biomesIdentifier[1]));
                 modifiers.add(new SpawnableBiomesModifier(biomes));
             }
 
@@ -137,8 +131,8 @@ public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener
                     double breedingChance = breeding.getAsJsonObject().get("breeding_chance").getAsDouble();
 
                     modifiers.add(new BreedingResultModifier(
-                            Identifier.of(parent1[0], parent1[1]),
-                            Identifier.of(parent2[0], parent2[1]),
+                            Identifier.fromNamespaceAndPath(parent1[0], parent1[1]),
+                            Identifier.fromNamespaceAndPath(parent2[0], parent2[1]),
                             breedingChance));
                 }
             }
@@ -170,7 +164,7 @@ public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener
             }
         }
 
-        Variants.addVariant(Variants.getMob(mobId), new MobVariant(Identifier.of(namespace, variantId), weight, modifiers));
+        Variants.addVariant(Variants.getMob(mobId), new MobVariant(Identifier.fromNamespaceAndPath(namespace, variantId), weight, modifiers));
     }
 
     private void applyBlacklist(Reader reader, String mob) {
@@ -181,7 +175,7 @@ public class ConfigDataLoader implements SimpleSynchronousResourceReloadListener
                 JsonArray blacklist = element.getAsJsonObject().get("blacklist").getAsJsonArray();
                 for (JsonElement entry : blacklist) {
                     String[] entrySplit = entry.getAsString().split(":");
-                    VariantBlacklist.blacklist(Variants.getMob(mob), Identifier.of(entrySplit[0], entrySplit[1]));
+                    VariantBlacklist.blacklist(Variants.getMob(mob), Identifier.fromNamespaceAndPath(entrySplit[0], entrySplit[1]));
                 }
             }
         }

@@ -1,6 +1,6 @@
 package com.github.nyuppo.client.render;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public interface MMVLivingRenderState {
     String getMmvVariantId();

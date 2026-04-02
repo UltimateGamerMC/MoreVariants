@@ -4,15 +4,15 @@ import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.util.BreedingResultData;
 import com.github.nyuppo.util.VariantBag;
 import com.github.nyuppo.variant.*;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.BiomeTags;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.random.CheckedRandom;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -74,7 +74,7 @@ public class Variants {
         }
 
         if (mob == EntityType.CAT) {
-            return new MobVariant(Identifier.ofVanilla("tabby"), 1);
+            return new MobVariant(Identifier.withDefaultNamespace("tabby"), 1);
         }
 
         return new MobVariant(MoreMobVariants.id("default"), 1);
@@ -158,7 +158,7 @@ public class Variants {
     }
 
     public static EntityType<?> getMob(String mobId) {
-        Optional<EntityType<?>> entityType = EntityType.get(mobId);
+        Optional<EntityType<?>> entityType = EntityType.byString(mobId);
         if (entityType.isPresent()) {
             return entityType.get();
         }
@@ -166,7 +166,7 @@ public class Variants {
         throw new IllegalArgumentException("Unknown mob identifier: " + mobId);
     }
 
-    public static MobVariant getRandomVariant(EntityType<?> mob, long randomSeed, @Nullable RegistryEntry<Biome> spawnBiome, @Nullable BreedingResultData breedingResultData, @Nullable Float moonSize) {
+    public static MobVariant getRandomVariant(EntityType<?> mob, long randomSeed, @Nullable Holder<Biome> spawnBiome, @Nullable BreedingResultData breedingResultData, @Nullable Float moonSize) {
         ArrayList<MobVariant> variants = getVariants(mob);
         if (variants.isEmpty()) {
             return getDefaultVariant(mob);
@@ -174,7 +174,7 @@ public class Variants {
 
         // Split the random to ensure no off-thread access of ThreadLocalRandom occurs
         // This fixes issues with Distant Horizons and C2ME
-        var random = new CheckedRandom(randomSeed);
+        RandomSource random = RandomSource.create(randomSeed);
         // Handle modifiers
         Iterator<MobVariant> i = variants.iterator();
         MobVariant variant;
@@ -258,19 +258,19 @@ public class Variants {
         return null;
     }
 
-    public static MobVariant getChildVariant(EntityType<?> mob, ServerWorld world, PassiveEntity parent1, PassiveEntity parent2) {
-        NbtCompound parent1Nbt = MoreMobVariants.getCustomDataNbt(parent1);
-        NbtCompound parent2Nbt = MoreMobVariants.getCustomDataNbt(parent2);
+    public static MobVariant getChildVariant(EntityType<?> mob, ServerLevel world, AgeableMob parent1, AgeableMob parent2) {
+        CompoundTag parent1Nbt = MoreMobVariants.getCustomDataNbt(parent1);
+        CompoundTag parent2Nbt = MoreMobVariants.getCustomDataNbt(parent2);
 
         if (parent1Nbt.contains(MoreMobVariants.NBT_KEY) && parent2Nbt.contains(MoreMobVariants.NBT_KEY)) {
-            String[] parent1VariantId = parent1Nbt.getString(MoreMobVariants.NBT_KEY, "").split(":");
-            MobVariant parent1Variant = Variants.getVariant(mob, Identifier.of(parent1VariantId[0], parent1VariantId[1]));
-            String[] parent2VariantId = parent2Nbt.getString(MoreMobVariants.NBT_KEY, "").split(":");
-            MobVariant parent2Variant = Variants.getVariant(mob, Identifier.of(parent2VariantId[0], parent2VariantId[1]));
+            String[] parent1VariantId = parent1Nbt.getStringOr(MoreMobVariants.NBT_KEY, "").split(":");
+            MobVariant parent1Variant = Variants.getVariant(mob, Identifier.fromNamespaceAndPath(parent1VariantId[0], parent1VariantId[1]));
+            String[] parent2VariantId = parent2Nbt.getStringOr(MoreMobVariants.NBT_KEY, "").split(":");
+            MobVariant parent2Variant = Variants.getVariant(mob, Identifier.fromNamespaceAndPath(parent2VariantId[0], parent2VariantId[1]));
 
-            return Variants.getRandomVariant(mob, world.getRandom().nextLong(), world.getBiome(parent1.getBlockPos()), new BreedingResultData(parent1Variant, parent2Variant), null);
+            return Variants.getRandomVariant(mob, world.getRandom().nextLong(), world.getBiome(parent1.blockPosition()), new BreedingResultData(parent1Variant, parent2Variant), null);
         } else {
-            return Variants.getRandomVariant(mob, world.getRandom().nextLong(), world.getBiome(parent1.getBlockPos()), null, null);
+            return Variants.getRandomVariant(mob, world.getRandom().nextLong(), world.getBiome(parent1.blockPosition()), null, null);
         }
     }
 
@@ -297,18 +297,18 @@ public class Variants {
 
         defaultVariants = new HashMap<EntityType<?>, ArrayList<MobVariant>>();
         defaultVariants.put(EntityType.CAT, new ArrayList<>(List.of(
-                new MobVariant(Identifier.ofVanilla("all_black"), 1)
+                new MobVariant(Identifier.withDefaultNamespace("all_black"), 1)
                         .addModifier(new MoonPhaseModifier(0.9f)),
-                new MobVariant(Identifier.ofVanilla("black"), 1),
-                new MobVariant(Identifier.ofVanilla("british_shorthair"), 1),
-                new MobVariant(Identifier.ofVanilla("calico"), 1),
-                new MobVariant(Identifier.ofVanilla("jellie"), 1),
-                new MobVariant(Identifier.ofVanilla("persian"), 1),
-                new MobVariant(Identifier.ofVanilla("ragdoll"), 1),
-                new MobVariant(Identifier.ofVanilla("red"), 1),
-                new MobVariant(Identifier.ofVanilla("siamese"), 1),
-                new MobVariant(Identifier.ofVanilla("tabby"), 1),
-                new MobVariant(Identifier.ofVanilla("white"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("black"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("british_shorthair"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("calico"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("jellie"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("persian"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("ragdoll"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("red"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("siamese"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("tabby"), 1),
+                new MobVariant(Identifier.withDefaultNamespace("white"), 1),
                 new MobVariant(MoreMobVariants.id("doug"), 1),
                 new MobVariant(MoreMobVariants.id("gray_tabby"), 1),
                 new MobVariant(MoreMobVariants.id("handsome"), 1),

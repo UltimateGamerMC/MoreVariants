@@ -1,11 +1,11 @@
 package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.client.render.MMVPigRenderState;
-import net.minecraft.client.render.entity.state.PigEntityRenderState;
+import net.minecraft.client.renderer.entity.state.PigRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(PigEntityRenderState.class)
+@Mixin(PigRenderState.class)
 public class PigEntityRenderStateMixin implements MMVPigRenderState {
     @Unique
     private String moremobvariantsVariantId = "";

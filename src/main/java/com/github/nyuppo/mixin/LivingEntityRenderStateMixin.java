@@ -1,8 +1,8 @@
 package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.client.render.MMVLivingRenderState;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 

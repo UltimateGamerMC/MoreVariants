@@ -1,26 +1,30 @@
 package com.github.nyuppo.mixin;
 
-import net.minecraft.client.model.*;
-import net.minecraft.client.render.entity.model.EntityModelPartNames;
-import net.minecraft.client.render.entity.model.PigEntityModel;
+import net.minecraft.client.model.animal.pig.PigModel;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.geom.PartPose;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(PigEntityModel.class)
+@Mixin(PigModel.class)
 public class PigFlowerMixin {
-    @Inject(method = "getModelData", at = @At("RETURN"))
-    private static void onGetModelData(Dilation dilation, CallbackInfoReturnable<ModelData> ci) {
-        ModelData data = ci.getReturnValue();
-        if (data != null) {
-            data.getRoot().addChild(EntityModelPartNames.HEAD,
-                    ModelPartBuilder.create()
-                            .uv(0, 0).cuboid(-4.0f, -4.0f, -8.0f, 8.0f, 8.0f, 8.0f, dilation)
-                            .uv(16, 16).cuboid(-2.0f, 0.0f, -9.0f, 4.0f, 3.0f, 1.0f, dilation)
-                            .uv(28, 3).cuboid(-1.0f, -5.0f, -7.0f, 4.0f, 1.0f, 4.0f, dilation)
-                            .uv(44, 2).cuboid(0.0f, -11.0f, -5.0f, 4.0f, 6.0f, 0.0f, dilation),
-                    ModelTransform.origin(0.0f, 12.0f, -6.0f));
-        }
-    }
+	@Inject(method = "createBasePigModel", at = @At("RETURN"))
+	private static void onCreateBasePigModel(CubeDeformation g, CallbackInfoReturnable<MeshDefinition> cir) {
+		MeshDefinition mesh = cir.getReturnValue();
+		PartDefinition root = mesh.getRoot();
+		root.addOrReplaceChild(
+			"head",
+			CubeListBuilder.create()
+				.texOffs(0, 0).addBox(-4.0F, -4.0F, -8.0F, 8.0F, 8.0F, 8.0F, g)
+				.texOffs(16, 16).addBox(-2.0F, 0.0F, -9.0F, 4.0F, 3.0F, 1.0F, g)
+				.texOffs(28, 3).addBox(-1.0F, -5.0F, -7.0F, 4.0F, 1.0F, 4.0F, g)
+				.texOffs(44, 2).addBox(0.0F, -11.0F, -5.0F, 4.0F, 6.0F, 0.0F, g),
+			PartPose.offset(0.0F, 12.0F, -6.0F)
+		);
+	}
 }

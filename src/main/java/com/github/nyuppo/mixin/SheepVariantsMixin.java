@@ -6,20 +6,20 @@ import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.networking.ServerRespondVariantPayload;
 import com.github.nyuppo.variant.MobVariant;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.passive.SheepEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.SpawnGroupData;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.ServerWorldAccess;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,45 +27,45 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(SheepEntity.class)
+@Mixin(Sheep.class)
 public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
     private MobVariant variant = Variants.getDefaultVariant(EntityType.SHEEP);
     private String hornColour = "";
 
     @Override
-    protected void onWriteCustomData(WriteView view, CallbackInfo ci) {
+    protected void onWriteCustomData(ValueOutput view, CallbackInfo ci) {
         view.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
         view.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
     }
 
     @Override
-    protected void onReadCustomData(ReadView view, CallbackInfo ci) {
-        String variantStr = view.getString(MoreMobVariants.NBT_KEY, "");
+    protected void onReadCustomData(ValueInput view, CallbackInfo ci) {
+        String variantStr = view.getStringOr(MoreMobVariants.NBT_KEY, "");
         if (!variantStr.isEmpty()) {
             if (variantStr.contains(":")) {
-                variant = Variants.getVariant(EntityType.SHEEP, Identifier.of(variantStr));
+                variant = Variants.getVariant(EntityType.SHEEP, Identifier.parse(variantStr));
             } else {
                 variant = Variants.getVariant(EntityType.SHEEP, MoreMobVariants.id(variantStr));
             }
         } else {
             Entity e = (Entity)(Object)this;
-            World w = e.getEntityWorld();
-            Float moonSize = w instanceof ServerWorld ? ((ServerWorld)w).getMoonSize(e.getBlockPos()) : null;
-            variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), w.getBiome(((SheepEntity)(Object)this).getBlockPos()), null, moonSize);
+            Level w = e.level();
+            Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
+            variant = Variants.getRandomVariant(EntityType.SHEEP, ((Sheep)(Object)this).getRandom().nextLong(), w.getBiome(((Sheep)(Object)this).blockPosition()), null, moonSize);
         }
-        hornColour = view.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
-        MinecraftServer server = ((Entity)(Object)this).getEntityWorld().getServer();
+        hornColour = view.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
+        MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {
-            server.getPlayerManager().getPlayerList().forEach((player) -> {
+            server.getPlayerList().getPlayers().forEach((player) -> {
                 ServerPlayNetworking.send(player, new ServerRespondVariantPayload(((Entity)(Object)this).getId(), variant.getIdentifier().toString(), false, 0, hornColour));
             });
         }
     }
 
     @Override
-    protected void onInitialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, CallbackInfoReturnable<EntityData> ci) {
-        variant = Variants.getRandomVariant(EntityType.SHEEP, ((SheepEntity)(Object)this).getRandom().nextLong(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()), null, world.toServerWorld().getMoonSize(((SheepEntity)(Object)this).getBlockPos()));
-        SheepHornSettings.SheepHornColour colour = SheepHornSettings.getRandomSheepHornColour(((SheepEntity)(Object)this).getRandom(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()));
+    protected void onFinalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData, CallbackInfoReturnable<SpawnGroupData> ci) {
+        variant = Variants.getRandomVariant(EntityType.SHEEP, ((Sheep)(Object)this).getRandom().nextLong(), world.getBiome(((Sheep)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Sheep)(Object)this).blockPosition()));
+        SheepHornSettings.SheepHornColour colour = SheepHornSettings.getRandomSheepHornColour(((Sheep)(Object)this).getRandom(), world.getBiome(((Sheep)(Object)this).blockPosition()));
         if (colour != null) {
             hornColour = colour.getId();
         }
@@ -75,22 +75,19 @@ public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
         MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
     }
 
-    @Inject(
-            method = "createChild(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/passive/PassiveEntity;)Lnet/minecraft/entity/passive/SheepEntity;",
-            at = @At("RETURN")
-    )
-    private void onCreateChild(ServerWorld world, PassiveEntity entity, CallbackInfoReturnable<SheepEntity> ci) {
-        SheepEntity child = ci.getReturnValue();
-        MobVariant variant = Variants.getChildVariant(EntityType.SHEEP, world, ((SheepEntity)(Object)this), entity);
-        var nbtParent1 = MoreMobVariants.getCustomDataNbt((SheepEntity)(Object)this);
+    @Inject(method = "getBreedOffspring", at = @At("RETURN"))
+    private void onGetBreedOffspring(ServerLevel world, AgeableMob entity, CallbackInfoReturnable<Sheep> ci) {
+        Sheep child = ci.getReturnValue();
+        MobVariant variant = Variants.getChildVariant(EntityType.SHEEP, world, ((Sheep)(Object)this), entity);
+        var nbtParent1 = MoreMobVariants.getCustomDataNbt((Sheep)(Object)this);
         var nbtParent2 = MoreMobVariants.getCustomDataNbt(entity);
         String colour = "";
-        if (!nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
-                && !nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
+        if (!nbtParent1.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
+                && !nbtParent2.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "").isEmpty()
                 && entity.getRandom().nextDouble() <= SheepHornSettings.getInheritChance()) {
-            colour = entity.getRandom().nextBoolean() ? nbtParent1.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "") : nbtParent2.getString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
+            colour = entity.getRandom().nextBoolean() ? nbtParent1.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "") : nbtParent2.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
         } else {
-            SheepHornSettings.SheepHornColour col = SheepHornSettings.getRandomSheepHornColour(entity.getRandom(), world.getBiome(((SheepEntity)(Object)this).getBlockPos()));
+            SheepHornSettings.SheepHornColour col = SheepHornSettings.getRandomSheepHornColour(entity.getRandom(), world.getBiome(((Sheep)(Object)this).blockPosition()));
             if (col != null) {
                 colour = col.getId();
             }

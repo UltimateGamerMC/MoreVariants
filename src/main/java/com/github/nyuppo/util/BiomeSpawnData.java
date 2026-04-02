@@ -1,11 +1,11 @@
 package com.github.nyuppo.util;
 
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.biome.Biome;
 
-public record BiomeSpawnData(TagKey<Biome> validSpawnBiomes, RegistryEntry<Biome> spawnBiome) {
+public record BiomeSpawnData(TagKey<Biome> validSpawnBiomes, Holder<Biome> spawnBiome) {
     public boolean canSpawn() {
-        return spawnBiome.isIn(validSpawnBiomes);
+        return spawnBiome.is(validSpawnBiomes);
     }
 }

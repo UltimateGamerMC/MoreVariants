@@ -1,10 +1,10 @@
 package com.github.nyuppo.util;
 
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.passive.ChickenEntity;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.world.entity.animal.chicken.Chicken;
 
 public class MMVTrackedData {
-    public static final TrackedData<String> CHICKEN_VARIANT_ID = DataTracker.registerData(ChickenEntity.class, TrackedDataHandlerRegistry.STRING);
+	public static final EntityDataAccessor<String> CHICKEN_VARIANT_ID = SynchedEntityData.defineId(Chicken.class, EntityDataSerializers.STRING);
 }

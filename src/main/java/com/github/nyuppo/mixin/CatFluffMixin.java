@@ -1,37 +1,44 @@
 package com.github.nyuppo.mixin;
 
-import net.minecraft.client.model.*;
-import net.minecraft.client.render.entity.model.EntityModelPartNames;
-import net.minecraft.client.render.entity.model.FelineEntityModel;
+import net.minecraft.client.model.animal.feline.AdultFelineModel;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.geom.PartPose;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(FelineEntityModel.class)
+@Mixin(AdultFelineModel.class)
 public class CatFluffMixin {
-    @Inject(method = "getModelData", at = @At("RETURN"))
-    private static void onGetModelData(Dilation dilation, CallbackInfoReturnable<ModelData> ci) {
-        ModelData data = ci.getReturnValue();
-        if (data == null) return;
-        ModelPartData root = data.getRoot();
-        root.addChild(EntityModelPartNames.HEAD,
-                ModelPartBuilder.create()
-                        .cuboid("main", -2.5f, -2.0f, -3.0f, 5.0f, 4.0f, 5.0f, dilation)
-                        .cuboid(EntityModelPartNames.NOSE, -1.5f, 0.0f, -4.0f, 3, 2, 2, dilation, 0, 24)
-                        .cuboid("ear1", -2.0f, -3.0f, 0.0f, 1, 1, 2, dilation, 0, 10)
-                        .cuboid("ear2", 1.0f, -3.0f, 0.0f, 1, 1, 2, dilation, 6, 10)
-                        .cuboid("scruff1", -4.5f, -2.0f, 1.0f, 9, 4, 0, dilation, 40, 28)
-                        .cuboid("scruff2", -4.5f, -2.0f, -1.0f, 9, 4, 0, dilation, 40, 28),
-                ModelTransform.origin(0.0f, 15.0f, -9.0f));
-
-        ModelPartBuilder modelpartBuilder3 = ModelPartBuilder.create().uv(20, 0).cuboid(-2.0f, 3.0f, -8.0f, 4.0f, 16.0f, 6.0f, dilation)
-                .uv(32, 12).cuboid(-4.0f, 6.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation)
-                .uv(32, 20).cuboid(-4.0f, 8.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation)
-                .uv(32, 12).cuboid(-4.0f, 10.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation)
-                .uv(32, 20).cuboid(-4.0f, 12.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation)
-                .uv(32, 12).cuboid(-4.0f, 14.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation)
-                .uv(32, 20).cuboid(-4.0f, 16.0f, -9.0f, 8.0f, 0.0f, 8.0f, dilation);
-        root.addChild(EntityModelPartNames.BODY, modelpartBuilder3, ModelTransform.of(0.0f, 12.0f, -10.0f, 1.5707964f, 0.0f, 0.0f));
-    }
+	@Inject(method = "createBodyMesh", at = @At("RETURN"))
+	private static void onCreateBodyMesh(CubeDeformation g, CallbackInfoReturnable<MeshDefinition> cir) {
+		MeshDefinition mesh = cir.getReturnValue();
+		PartDefinition root = mesh.getRoot();
+		root.addOrReplaceChild(
+			"head",
+			CubeListBuilder.create()
+				.addBox("main", -2.5F, -2.0F, -3.0F, 5.0F, 4.0F, 5.0F, g)
+				.addBox("nose", -1.5F, -0.001F, -4.0F, 3, 2, 2, g, 0, 24)
+				.addBox("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2, g, 0, 10)
+				.addBox("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2, g, 6, 10)
+				.addBox("scruff1", -4.5F, -2.0F, 1.0F, 9, 4, 0, g, 40, 28)
+				.addBox("scruff2", -4.5F, -2.0F, -1.0F, 9, 4, 0, g, 40, 28),
+			PartPose.offset(0.0F, 15.0F, -9.0F)
+		);
+		root.addOrReplaceChild(
+			"body",
+			CubeListBuilder.create()
+				.texOffs(20, 0).addBox(-2.0F, 3.0F, -8.0F, 4.0F, 16.0F, 6.0F, g)
+				.texOffs(32, 12).addBox(-4.0F, 6.0F, -9.0F, 8.0F, 0.0F, 8.0F, g)
+				.texOffs(32, 20).addBox(-4.0F, 8.0F, -9.0F, 8.0F, 0.0F, 8.0F, g)
+				.texOffs(32, 12).addBox(-4.0F, 10.0F, -9.0F, 8.0F, 0.0F, 8.0F, g)
+				.texOffs(32, 20).addBox(-4.0F, 12.0F, -9.0F, 8.0F, 0.0F, 8.0F, g)
+				.texOffs(32, 12).addBox(-4.0F, 14.0F, -9.0F, 8.0F, 0.0F, 8.0F, g)
+				.texOffs(32, 20).addBox(-4.0F, 16.0F, -9.0F, 8.0F, 0.0F, 8.0F, g),
+			PartPose.offsetAndRotation(0.0F, 12.0F, -10.0F, (float) (Math.PI / 2), 0.0F, 0.0F)
+		);
+	}
 }

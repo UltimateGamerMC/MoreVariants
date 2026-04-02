@@ -1,9 +1,9 @@
 package com.github.nyuppo.config;
 
 import com.github.nyuppo.MoreMobVariants;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.Holder;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -42,12 +42,12 @@ public class SheepHornSettings {
     }
 
     @Nullable
-    public static SheepHornColour getRandomSheepHornColour(Random random, @Nullable RegistryEntry<Biome> spawnBiome) {
+    public static SheepHornColour getRandomSheepHornColour(RandomSource random, @Nullable Holder<Biome> spawnBiome) {
         if (random.nextDouble() > hasHornsChance) {
             return null;
         }
 
-        if (spawnBiome == null || !spawnBiome.isIn(MoreMobVariants.SHEEP_SPAWN_WITH_HORNS)) {
+        if (spawnBiome == null || !spawnBiome.is(MoreMobVariants.SHEEP_SPAWN_WITH_HORNS)) {
             return null;
         }
 
@@ -107,9 +107,9 @@ class WeightedRandomBag<T extends Object> {
 
     private List<Entry> entries = new ArrayList<>();
     private double accumulatedWeight;
-    private final Random random;
+    private final RandomSource random;
 
-    public WeightedRandomBag(Random random) {
+    public WeightedRandomBag(RandomSource random) {
         this.random = random;
     }
 
