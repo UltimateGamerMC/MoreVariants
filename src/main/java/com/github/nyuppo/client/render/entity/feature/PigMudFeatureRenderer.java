@@ -35,8 +35,7 @@ public class PigMudFeatureRenderer extends RenderLayer<PigRenderState, PigModel>
 				LivingEntityRenderer.getOverlayCoords(state, 0.0F),
 				0xFFFFFFFF,
 				null,
-				state.outlineColor,
-				null
+				state.outlineColor
 			);
 	}
 }

@@ -18,6 +18,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.cow.Cow;
 import net.minecraft.world.entity.animal.cow.CowVariant;
 import net.minecraft.world.entity.animal.cow.CowVariants;
@@ -34,7 +35,7 @@ import java.util.Map;
 
 @Mixin(CowRenderer.class)
 public class CowRendererMixin {
-	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/cow/temperate_cow.png");
+	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/cow/cow_temperate.png");
 	private static final Identifier LEGACY_DEFAULT = Identifier.fromNamespaceAndPath("moremobvariants", "textures/entity/cow/legacy_reference.png");
 
 	@Shadow
@@ -73,7 +74,7 @@ public class CowRendererMixin {
 		}
 		ext.setMmvTextureOverride(null);
 		if (entity.hasCustomName()) {
-			MobVariant v = Variants.getVariantFromNametag(EntityType.COW, entity.getName().getString());
+			MobVariant v = Variants.getVariantFromNametag(EntityTypes.COW, entity.getName().getString());
 			if (v != null) {
 				Identifier id = v.getIdentifier();
 				ext.setMmvTextureOverride(Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/entity/cow/" + id.getPath() + ".png"));
@@ -95,7 +96,7 @@ public class CowRendererMixin {
 				ci.setReturnValue(DEFAULT);
 			} else {
 				String[] split = Variants.splitVariant(variant);
-				if (Variants.getVariantNullable(EntityType.COW, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
+				if (Variants.getVariantNullable(EntityTypes.COW, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
 					ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/cow/" + split[1] + ".png"));
 				}
 			}

@@ -1,6 +1,7 @@
 package com.github.nyuppo.config;
 
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
@@ -31,6 +32,6 @@ public class VariantBlacklist {
 
     public static void clearAllBlacklists() {
         Variants.getAllDefaultVariants().keySet().forEach(VariantBlacklist::clearBlacklist);
-        clearBlacklist(EntityType.CAT); // Special case for cat since it isn't included in variants list
+        clearBlacklist(EntityTypes.CAT); // Special case for cat since it isn't included in variants list
     }
 }

@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.chicken.Chicken;
@@ -58,7 +59,7 @@ public class MoreMobVariants implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Giving mobs a fresh coat of paint...");
 		ResourceLoader.get(PackType.SERVER_DATA).registerReloadListener(MoreMobVariants.id(MoreMobVariants.MOD_ID), new ConfigDataLoader());
-		BiomeModifications.addSpawn(BiomeSelectors.tag(ADDITIONAL_WOLF_SPAWNS), MobCategory.CREATURE, EntityType.WOLF, 5, 4, 4);
+		BiomeModifications.addSpawn(BiomeSelectors.tag(ADDITIONAL_WOLF_SPAWNS), MobCategory.CREATURE, EntityTypes.WOLF, 5, 4, 4);
 		PayloadTypeRegistry.serverboundPlay().register(ClientRequestVariantPayload.TYPE, ClientRequestVariantPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(ServerRespondBasicVariantPayload.TYPE, ServerRespondBasicVariantPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(ServerRespondVariantPayload.TYPE, ServerRespondVariantPayload.CODEC);

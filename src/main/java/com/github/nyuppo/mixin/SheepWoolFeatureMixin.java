@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.entity.layers.SheepWoolLayer;
 import net.minecraft.client.renderer.entity.state.SheepRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,7 +34,7 @@ public class SheepWoolFeatureMixin {
 
 	@ModifyArg(
 		method = "submit",
-		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/RenderLayer;coloredCutoutModelCopyLayerRender(Lnet/minecraft/client/model/Model;Lnet/minecraft/resources/Identifier;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;II)V"),
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/SheepWoolLayer;coloredCutoutModelCopyLayerRender(Lnet/minecraft/client/model/Model;Lnet/minecraft/resources/Identifier;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;II)V"),
 		index = 1
 	)
 	private Identifier mixinSheepFurTexture(Identifier location) {
@@ -43,7 +44,7 @@ public class SheepWoolFeatureMixin {
 		if (variantStr == null || variantStr.isEmpty()) return location;
 		int colon = variantStr.indexOf(':');
 		Identifier variantId = colon >= 0 ? Identifier.fromNamespaceAndPath(variantStr.substring(0, colon), variantStr.substring(colon + 1)) : MoreMobVariants.id(variantStr);
-		if (!Variants.getVariant(EntityType.SHEEP, variantId).hasCustomWool()) return location;
+		if (!Variants.getVariant(EntityTypes.SHEEP, variantId).hasCustomWool()) return location;
 		return Identifier.fromNamespaceAndPath(variantId.getNamespace(), "textures/entity/sheep/wool/" + variantId.getPath() + ".png");
 	}
 }

@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.entity.state.SheepRenderState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,7 +29,7 @@ public class SheepRendererMixin {
 		ext.setMmvHornColour(nbt.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, ""));
 		ext.setMmvTextureOverride(null);
 		if (entity.hasCustomName()) {
-			MobVariant v = Variants.getVariantFromNametag(EntityType.SHEEP, entity.getName().getString());
+			MobVariant v = Variants.getVariantFromNametag(EntityTypes.SHEEP, entity.getName().getString());
 			if (v != null) {
 				Identifier id = v.getIdentifier();
 				ext.setMmvVariantId(id.toString());

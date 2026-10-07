@@ -66,11 +66,11 @@ public class SheepHornsFeatureRenderer extends RenderLayer<SheepRenderState, She
 			poseStack.pushPose();
 			poseStack.translate(0.0, 0.5, 0.25);
 			submitNodeCollector.order(0)
-				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor, null);
+				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor);
 			poseStack.popPose();
 		} else {
 			submitNodeCollector.order(0)
-				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor, null);
+				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor);
 		}
 	}
 }

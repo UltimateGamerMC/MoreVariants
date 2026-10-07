@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.animal.cow.Cow;
 import net.minecraft.world.entity.animal.cow.CowVariants;
@@ -31,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Cow.class)
 public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
-    private MobVariant variant = Variants.getDefaultVariant(EntityType.COW);
+    private MobVariant variant = Variants.getDefaultVariant(EntityTypes.COW);
 
     private static void setCowVariantTemperate(Cow cow) {
         cow.setVariant(cow.registryAccess().lookupOrThrow(Registries.COW_VARIANT).getOrThrow(CowVariants.TEMPERATE));
@@ -52,9 +53,9 @@ public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
         if (!variantStr.isEmpty()) {
             hasModVariant = true;
             if (variantStr.contains(":")) {
-                variant = Variants.getVariant(EntityType.COW, Identifier.parse(variantStr));
+                variant = Variants.getVariant(EntityTypes.COW, Identifier.parse(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.COW, MoreMobVariants.id(variantStr));
+                variant = Variants.getVariant(EntityTypes.COW, MoreMobVariants.id(variantStr));
             }
             setCowVariantTemperate((Cow)(Object)this);
         } else {
@@ -63,7 +64,7 @@ public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
             if (MoreMobVariants.isTemperateBiome(w.getBiome(((Cow)(Object)this).blockPosition()))) {
                 hasModVariant = true;
                 Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
-                variant = Variants.getRandomVariant(EntityType.COW, ((Cow)(Object)this).getRandom().nextLong(), w.getBiome(((Cow)(Object)this).blockPosition()), null, moonSize);
+                variant = Variants.getRandomVariant(EntityTypes.COW, ((Cow)(Object)this).getRandom().nextLong(), w.getBiome(((Cow)(Object)this).blockPosition()), null, moonSize);
                 setCowVariantTemperate((Cow)(Object)this);
                 var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
                 data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
@@ -85,7 +86,7 @@ public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
         if (!MoreMobVariants.isTemperateBiome(world.getBiome(((Cow)(Object)this).blockPosition()))) {
             return;
         }
-        variant = Variants.getRandomVariant(EntityType.COW, ((Cow)(Object)this).getRandom().nextLong(), world.getBiome(((Cow)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Cow)(Object)this).blockPosition()));
+        variant = Variants.getRandomVariant(EntityTypes.COW, ((Cow)(Object)this).getRandom().nextLong(), world.getBiome(((Cow)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Cow)(Object)this).blockPosition()));
         var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
         data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
         MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
@@ -97,7 +98,7 @@ public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
         Cow child = ci.getReturnValue();
         if (child == null) return;
         if (!MoreMobVariants.isTemperateBiome(world.getBiome(child.blockPosition()))) return;
-        MobVariant childVariant = Variants.getChildVariant(EntityType.COW, world, ((Cow)(Object)this), entity);
+        MobVariant childVariant = Variants.getChildVariant(EntityTypes.COW, world, ((Cow)(Object)this), entity);
         setCowVariantTemperate(child);
         var childData = MoreMobVariants.getCustomDataNbt(child);
         childData.putString(MoreMobVariants.NBT_KEY, childVariant.getIdentifier().toString());

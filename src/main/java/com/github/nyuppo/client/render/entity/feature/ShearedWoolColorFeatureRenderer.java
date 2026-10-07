@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.entity.state.SheepRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 
 @Environment(EnvType.CLIENT)
 public class ShearedWoolColorFeatureRenderer extends RenderLayer<SheepRenderState, SheepModel> {
@@ -31,7 +32,7 @@ public class ShearedWoolColorFeatureRenderer extends RenderLayer<SheepRenderStat
 		if (variantStr == null || variantStr.isEmpty()) return;
 		int colon = variantStr.indexOf(':');
 		Identifier variantId = colon >= 0 ? Identifier.fromNamespaceAndPath(variantStr.substring(0, colon), variantStr.substring(colon + 1)) : MoreMobVariants.id(variantStr);
-		if (!Variants.getVariant(EntityType.SHEEP, variantId).hasColorWhenSheared()) return;
+		if (!Variants.getVariant(EntityTypes.SHEEP, variantId).hasColorWhenSheared()) return;
 		Identifier overlay = MoreMobVariants.id("textures/entity/sheep/sheared_color_overlay/" + variantId.getPath() + ".png");
 		EntityModel<SheepRenderState> model = getParentModel();
 		submitNodeCollector.order(0)
@@ -44,8 +45,7 @@ public class ShearedWoolColorFeatureRenderer extends RenderLayer<SheepRenderStat
 				LivingEntityRenderer.getOverlayCoords(state, 0.0F),
 				state.getWoolColor(),
 				null,
-				state.outlineColor,
-				null
+				state.outlineColor
 			);
 	}
 }

@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.animal.feline.Cat;
 import net.minecraft.world.entity.animal.feline.CatVariants;
@@ -34,7 +35,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Cat.class)
 public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
-    private MobVariant variant = Variants.getDefaultVariant(EntityType.CAT);
+    private MobVariant variant = Variants.getDefaultVariant(EntityTypes.CAT);
 
     @Invoker("setVariant")
     abstract void invokeSetVariant(Holder<CatVariant> variant);
@@ -49,15 +50,15 @@ public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
         String variantStr = view.getStringOr(MoreMobVariants.NBT_KEY, "");
         if (!variantStr.isEmpty()) {
             if (variantStr.contains(":")) {
-                variant = Variants.getVariant(EntityType.CAT, Identifier.parse(variantStr));
+                variant = Variants.getVariant(EntityTypes.CAT, Identifier.parse(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.CAT, MoreMobVariants.id(variantStr));
+                variant = Variants.getVariant(EntityTypes.CAT, MoreMobVariants.id(variantStr));
             }
         } else {
             Entity e = (Entity)(Object)this;
             Level w = e.level();
             Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
-            variant = Variants.getRandomVariant(EntityType.CAT, ((Cat)(Object)this).getRandom().nextLong(), w.getBiome(((Cat)(Object)this).blockPosition()), null, moonSize);
+            variant = Variants.getRandomVariant(EntityTypes.CAT, ((Cat)(Object)this).getRandom().nextLong(), w.getBiome(((Cat)(Object)this).blockPosition()), null, moonSize);
         }
         invokeSetVariant(((Cat)(Object)this).registryAccess().lookupOrThrow(Registries.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
@@ -70,9 +71,9 @@ public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onFinalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData, CallbackInfoReturnable<SpawnGroupData> ci) {
-        variant = Variants.getRandomVariant(EntityType.CAT, ((Cat)(Object)this).getRandom().nextLong(), world.getBiome(((Cat)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Cat)(Object)this).blockPosition()));
+        variant = Variants.getRandomVariant(EntityTypes.CAT, ((Cat)(Object)this).getRandom().nextLong(), world.getBiome(((Cat)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Cat)(Object)this).blockPosition()));
         if (world.getLevel().structureManager().getStructureWithPieceAt(((Cat) (Object) this).blockPosition(), StructureTags.CATS_SPAWN_AS_BLACK).isValid()) {
-            MobVariant allBlack = Variants.getVariantNullable(EntityType.CAT, Identifier.withDefaultNamespace("all_black"));
+            MobVariant allBlack = Variants.getVariantNullable(EntityTypes.CAT, Identifier.withDefaultNamespace("all_black"));
             if (allBlack != null) {
                 variant = allBlack;
                 ((Cat) (Object) this).setPersistenceRequired();
@@ -87,7 +88,7 @@ public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
     @Inject(method = "getBreedOffspring", at = @At("RETURN"))
     private void onGetBreedOffspring(ServerLevel world, AgeableMob entity, CallbackInfoReturnable<Cat> ci) {
         Cat child = ci.getReturnValue();
-        MobVariant variant = Variants.getChildVariant(EntityType.CAT, world, ((Cat)(Object)this), entity);
+        MobVariant variant = Variants.getChildVariant(EntityTypes.CAT, world, ((Cat)(Object)this), entity);
         ((CatVariantsMixin)(Object)child).invokeSetVariant(world.registryAccess().lookupOrThrow(Registries.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
         var childData = MoreMobVariants.getCustomDataNbt(child);
         childData.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());

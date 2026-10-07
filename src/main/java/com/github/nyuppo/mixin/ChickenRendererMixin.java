@@ -13,6 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.chicken.Chicken;
 import net.minecraft.world.entity.animal.chicken.ChickenVariants;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChickenRenderer.class)
 public class ChickenRendererMixin {
-	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/chicken/temperate_chicken.png");
+	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/chicken/chicken_temperate.png");
 
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
 	private void onExtractRenderState(Chicken entity, ChickenRenderState state, float partialTicks, CallbackInfo ci) {
@@ -47,7 +48,7 @@ public class ChickenRendererMixin {
 			state.variant = entity.registryAccess().lookupOrThrow(Registries.CHICKEN_VARIANT).getOrThrow(ChickenVariants.TEMPERATE).value();
 		}
 		if (entity.hasCustomName()) {
-			MobVariant v = Variants.getVariantFromNametag(EntityType.CHICKEN, entity.getName().getString());
+			MobVariant v = Variants.getVariantFromNametag(EntityTypes.CHICKEN, entity.getName().getString());
 			if (v != null) {
 				Identifier id = v.getIdentifier();
 				ext.setMmvTextureOverride(Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/entity/chicken/" + id.getPath() + ".png"));
@@ -68,7 +69,7 @@ public class ChickenRendererMixin {
 				ci.setReturnValue(DEFAULT);
 			} else {
 				String[] split = Variants.splitVariant(variant);
-				if (Variants.getVariantNullable(EntityType.CHICKEN, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
+				if (Variants.getVariantNullable(EntityTypes.CHICKEN, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
 					ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/chicken/" + split[1] + ".png"));
 				}
 			}

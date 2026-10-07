@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.monster.skeleton.Skeleton;
 import net.minecraft.server.MinecraftServer;
@@ -25,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Skeleton.class)
 public class SkeletonVariantsMixin extends MobEntityVariantsMixin {
-    private MobVariant variant = Variants.getDefaultVariant(EntityType.SKELETON);
+    private MobVariant variant = Variants.getDefaultVariant(EntityTypes.SKELETON);
 
     @Override
     protected void onWriteCustomData(ValueOutput view, CallbackInfo ci) {
@@ -37,15 +38,15 @@ public class SkeletonVariantsMixin extends MobEntityVariantsMixin {
         String variantStr = view.getStringOr(MoreMobVariants.NBT_KEY, "");
         if (!variantStr.isEmpty()) {
             if (variantStr.contains(":")) {
-                variant = Variants.getVariant(EntityType.SKELETON, Identifier.parse(variantStr));
+                variant = Variants.getVariant(EntityTypes.SKELETON, Identifier.parse(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.SKELETON, MoreMobVariants.id(variantStr));
+                variant = Variants.getVariant(EntityTypes.SKELETON, MoreMobVariants.id(variantStr));
             }
         } else {
             Entity e = (Entity)(Object)this;
             Level w = e.level();
             Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
-            variant = Variants.getRandomVariant(EntityType.SKELETON, ((Skeleton)(Object)this).getRandom().nextLong(), w.getBiome(((Skeleton)(Object)this).blockPosition()), null, moonSize);
+            variant = Variants.getRandomVariant(EntityTypes.SKELETON, ((Skeleton)(Object)this).getRandom().nextLong(), w.getBiome(((Skeleton)(Object)this).blockPosition()), null, moonSize);
         }
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {
@@ -57,7 +58,7 @@ public class SkeletonVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onFinalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData, CallbackInfoReturnable<SpawnGroupData> ci) {
-        variant = Variants.getRandomVariant(EntityType.SKELETON, ((Skeleton)(Object)this).getRandom().nextLong(), world.getBiome(((Skeleton)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Skeleton)(Object)this).blockPosition()));
+        variant = Variants.getRandomVariant(EntityTypes.SKELETON, ((Skeleton)(Object)this).getRandom().nextLong(), world.getBiome(((Skeleton)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Skeleton)(Object)this).blockPosition()));
         var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
         data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
         MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);

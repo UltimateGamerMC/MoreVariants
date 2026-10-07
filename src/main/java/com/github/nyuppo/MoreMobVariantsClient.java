@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.pig.Pig;
 import net.minecraft.world.entity.animal.sheep.Sheep;
@@ -31,7 +32,7 @@ public class MoreMobVariantsClient implements ClientModInitializer {
 		return (RenderLayer<T, ? extends EntityModel<T>>) layer;
 	}
 
-	Set<EntityType<?>> validEntities = Set.of(EntityType.CAT, EntityType.CHICKEN, EntityType.COW, EntityType.PIG, EntityType.SHEEP, EntityType.SKELETON, EntityType.SPIDER, EntityType.WOLF, EntityType.ZOMBIE);
+	Set<EntityType<?>> validEntities = Set.of(EntityTypes.CAT, EntityTypes.CHICKEN, EntityTypes.COW, EntityTypes.PIG, EntityTypes.SHEEP, EntityTypes.SKELETON, EntityTypes.SPIDER, EntityTypes.WOLF, EntityTypes.ZOMBIE);
 	public static final Map<Integer, String> VARIANT_CACHE = new ConcurrentHashMap<>();
 	private static final Map<Integer, Long> LAST_VARIANT_REQUEST = new ConcurrentHashMap<>();
 	private static final long REQUEST_COOLDOWN_MS = 2000;

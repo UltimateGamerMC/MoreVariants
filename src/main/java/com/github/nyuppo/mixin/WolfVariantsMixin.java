@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.animal.wolf.Wolf;
@@ -33,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Wolf.class)
 public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
-    private MobVariant variant = Variants.getDefaultVariant(EntityType.WOLF);
+    private MobVariant variant = Variants.getDefaultVariant(EntityTypes.WOLF);
 
     @Invoker("setVariant")
     abstract void invokeSetVariant(Holder<WolfVariant> variant);
@@ -50,9 +51,9 @@ public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
         if (!variantStr.isEmpty()) {
             hasModVariant = true;
             if (variantStr.contains(":")) {
-                variant = Variants.getVariant(EntityType.WOLF, Identifier.parse(variantStr));
+                variant = Variants.getVariant(EntityTypes.WOLF, Identifier.parse(variantStr));
             } else {
-                variant = Variants.getVariant(EntityType.WOLF, MoreMobVariants.id(variantStr));
+                variant = Variants.getVariant(EntityTypes.WOLF, MoreMobVariants.id(variantStr));
             }
         } else {
             Entity e = (Entity)(Object)this;
@@ -60,7 +61,7 @@ public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
             if (MoreMobVariants.isTemperateBiome(w.getBiome(((Wolf)(Object)this).blockPosition()))) {
                 hasModVariant = true;
                 Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
-                variant = Variants.getRandomVariant(EntityType.WOLF, ((Wolf)(Object)this).getRandom().nextLong(), w.getBiome(((Wolf)(Object)this).blockPosition()), null, moonSize);
+                variant = Variants.getRandomVariant(EntityTypes.WOLF, ((Wolf)(Object)this).getRandom().nextLong(), w.getBiome(((Wolf)(Object)this).blockPosition()), null, moonSize);
             }
         }
         if (!hasModVariant) {
@@ -80,7 +81,7 @@ public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
         if (!MoreMobVariants.isTemperateBiome(world.getBiome(((Wolf)(Object)this).blockPosition()))) {
             return;
         }
-        variant = Variants.getRandomVariant(EntityType.WOLF, ((Wolf)(Object)this).getRandom().nextLong(), world.getBiome(((Wolf)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Wolf)(Object)this).blockPosition()));
+        variant = Variants.getRandomVariant(EntityTypes.WOLF, ((Wolf)(Object)this).getRandom().nextLong(), world.getBiome(((Wolf)(Object)this).blockPosition()), null, world.getLevel().getMoonBrightness(((Wolf)(Object)this).blockPosition()));
         var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
         data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
         MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
@@ -92,7 +93,7 @@ public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
         Wolf child = ci.getReturnValue();
         if (child == null) return;
         if (!MoreMobVariants.isTemperateBiome(world.getBiome(child.blockPosition()))) return;
-        MobVariant variant = Variants.getChildVariant(EntityType.WOLF, world, ((Wolf)(Object)this), entity);
+        MobVariant variant = Variants.getChildVariant(EntityTypes.WOLF, world, ((Wolf)(Object)this), entity);
         ((WolfVariantsMixin)(Object)child).invokeSetVariant(world.registryAccess().lookupOrThrow(Registries.WOLF_VARIANT).getOrThrow(WolfVariants.DEFAULT));
         var childData = MoreMobVariants.getCustomDataNbt(child);
         childData.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());

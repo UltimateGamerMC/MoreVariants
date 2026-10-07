@@ -31,7 +31,7 @@ import java.util.Map;
 
 @Mixin(PigRenderer.class)
 public class PigRendererMixin {
-	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/pig/temperate_pig.png");
+	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/pig/pig_temperate.png");
 
 	@Shadow
 	private Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> models;

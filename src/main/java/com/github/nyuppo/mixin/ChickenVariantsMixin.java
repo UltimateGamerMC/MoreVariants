@@ -19,6 +19,7 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.animal.chicken.Chicken;
@@ -35,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Chicken.class)
 public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
-	private MobVariant variant = Variants.getDefaultVariant(EntityType.CHICKEN);
+	private MobVariant variant = Variants.getDefaultVariant(EntityTypes.CHICKEN);
 
 	@Inject(method = "defineSynchedData", at = @At("TAIL"))
 	private void onDefineSynchedData(SynchedEntityData.Builder entityData, CallbackInfo ci) {
@@ -57,9 +58,9 @@ public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
 		if (!variantStr.isEmpty()) {
 			hasModVariant = true;
 			if (variantStr.contains(":")) {
-				variant = Variants.getVariant(EntityType.CHICKEN, Identifier.parse(variantStr));
+				variant = Variants.getVariant(EntityTypes.CHICKEN, Identifier.parse(variantStr));
 			} else {
-				variant = Variants.getVariant(EntityType.CHICKEN, MoreMobVariants.id(variantStr));
+				variant = Variants.getVariant(EntityTypes.CHICKEN, MoreMobVariants.id(variantStr));
 			}
 			((Chicken) (Object) this).getEntityData().set(MMVTrackedData.CHICKEN_VARIANT_ID, variant.getIdentifier().toString());
 			((Chicken) (Object) this).setVariant(((Chicken) (Object) this).registryAccess().lookupOrThrow(Registries.CHICKEN_VARIANT).getOrThrow(ChickenVariants.TEMPERATE));
@@ -70,7 +71,7 @@ public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
 			if (MoreMobVariants.isTemperateBiome(biome)) {
 				hasModVariant = true;
 				Float moonSize = w instanceof ServerLevel sl ? sl.getMoonBrightness(e.blockPosition()) : null;
-				variant = Variants.getRandomVariant(EntityType.CHICKEN, ((Chicken) (Object) this).getRandom().nextLong(), biome, null, moonSize);
+				variant = Variants.getRandomVariant(EntityTypes.CHICKEN, ((Chicken) (Object) this).getRandom().nextLong(), biome, null, moonSize);
 				String id = variant.getIdentifier().toString();
 				((Chicken) (Object) this).getEntityData().set(MMVTrackedData.CHICKEN_VARIANT_ID, id);
 				((Chicken) (Object) this).setVariant(((Chicken) (Object) this).registryAccess().lookupOrThrow(Registries.CHICKEN_VARIANT).getOrThrow(ChickenVariants.TEMPERATE));
@@ -92,7 +93,7 @@ public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
 	@Override
 	protected void onFinalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData, CallbackInfoReturnable<SpawnGroupData> ci) {
 		if (!MoreMobVariants.isTemperateBiome(world.getBiome(((Chicken) (Object) this).blockPosition()))) return;
-		variant = Variants.getRandomVariant(EntityType.CHICKEN, ((Chicken) (Object) this).getRandom().nextLong(), world.getBiome(((Chicken) (Object) this).blockPosition()), null, world.getLevel().getMoonBrightness(((Chicken) (Object) this).blockPosition()));
+		variant = Variants.getRandomVariant(EntityTypes.CHICKEN, ((Chicken) (Object) this).getRandom().nextLong(), world.getBiome(((Chicken) (Object) this).blockPosition()), null, world.getLevel().getMoonBrightness(((Chicken) (Object) this).blockPosition()));
 		String id = variant.getIdentifier().toString();
 		((Chicken) (Object) this).getEntityData().set(MMVTrackedData.CHICKEN_VARIANT_ID, id);
 		var data = MoreMobVariants.getCustomDataNbt((Entity) (Object) this);
@@ -106,7 +107,7 @@ public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
 		Chicken child = cir.getReturnValue();
 		if (child == null) return;
 		if (!MoreMobVariants.isTemperateBiome(level.getBiome(child.blockPosition()))) return;
-		MobVariant childVariant = Variants.getChildVariant(EntityType.CHICKEN, level, ((Chicken) (Object) this), partner);
+		MobVariant childVariant = Variants.getChildVariant(EntityTypes.CHICKEN, level, ((Chicken) (Object) this), partner);
 		child.setVariant(level.registryAccess().lookupOrThrow(Registries.CHICKEN_VARIANT).getOrThrow(ChickenVariants.TEMPERATE));
 		String id = childVariant.getIdentifier().toString();
 		child.getEntityData().set(MMVTrackedData.CHICKEN_VARIANT_ID, id);

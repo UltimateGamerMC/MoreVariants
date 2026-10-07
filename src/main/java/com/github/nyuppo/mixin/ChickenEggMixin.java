@@ -4,6 +4,7 @@ import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.variant.MobVariant;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.chicken.Chicken;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEgg;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +20,7 @@ public class ChickenEggMixin {
     )
     private Chicken mixin(Chicken chickenEntity) {
         if (chickenEntity.level() instanceof ServerLevel world) {
-            MobVariant variant = Variants.getRandomVariant(EntityType.CHICKEN, chickenEntity.getRandom().nextLong(), world.getBiome(chickenEntity.blockPosition()), null, world.getMoonBrightness(chickenEntity.blockPosition()));
+            MobVariant variant = Variants.getRandomVariant(EntityTypes.CHICKEN, chickenEntity.getRandom().nextLong(), world.getBiome(chickenEntity.blockPosition()), null, world.getMoonBrightness(chickenEntity.blockPosition()));
             var data = MoreMobVariants.getCustomDataNbt(chickenEntity);
             data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
             MoreMobVariants.setCustomDataNbt(chickenEntity, data);

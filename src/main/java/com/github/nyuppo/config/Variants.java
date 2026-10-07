@@ -5,6 +5,7 @@ import com.github.nyuppo.util.BreedingResultData;
 import com.github.nyuppo.util.VariantBag;
 import com.github.nyuppo.variant.*;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Holder;
@@ -73,7 +74,7 @@ public class Variants {
             }
         }
 
-        if (mob == EntityType.CAT) {
+        if (mob == EntityTypes.CAT) {
             return new MobVariant(Identifier.withDefaultNamespace("tabby"), 1);
         }
 
@@ -122,7 +123,7 @@ public class Variants {
         for (EntityType<?> type : defaultVariants.keySet()) {
             variants.put(type, new ArrayList<>(defaultVariants.get(type)));
         }
-        nametagOverrides.put(EntityType.SHEEP, new ArrayList<>(List.of(
+        nametagOverrides.put(EntityTypes.SHEEP, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("rainbow"), 0)
                         .addModifier(new CustomWoolModifier())
                         .addModifier(new NametagOverrideModifier("rainbow"))
@@ -158,7 +159,7 @@ public class Variants {
     }
 
     public static EntityType<?> getMob(String mobId) {
-        Optional<EntityType<?>> entityType = EntityType.byString(mobId);
+        Optional<EntityType<?>> entityType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getOptional(net.minecraft.resources.Identifier.tryParse(mobId));
         if (entityType.isPresent()) {
             return entityType.get();
         }
@@ -289,14 +290,14 @@ public class Variants {
     static {
         variants = new HashMap<EntityType<?>, ArrayList<MobVariant>>();
         nametagOverrides = new HashMap<EntityType<?>, ArrayList<MobVariant>>();
-        nametagOverrides.put(EntityType.SHEEP, new ArrayList<>(List.of(
+        nametagOverrides.put(EntityTypes.SHEEP, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("rainbow"), 0)
                         .addModifier(new CustomWoolModifier())
                         .addModifier(new NametagOverrideModifier("rainbow"))
         )));
 
         defaultVariants = new HashMap<EntityType<?>, ArrayList<MobVariant>>();
-        defaultVariants.put(EntityType.CAT, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.CAT, new ArrayList<>(List.of(
                 new MobVariant(Identifier.withDefaultNamespace("all_black"), 1)
                         .addModifier(new MoonPhaseModifier(0.9f)),
                 new MobVariant(Identifier.withDefaultNamespace("black"), 1),
@@ -314,7 +315,7 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("handsome"), 1),
                 new MobVariant(MoreMobVariants.id("tortoiseshell"), 1)
         )));
-        defaultVariants.put(EntityType.CHICKEN, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.CHICKEN, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("midnight"), 1),
                 new MobVariant(MoreMobVariants.id("amber"), 2)
                         .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
@@ -331,7 +332,7 @@ public class Variants {
                         .addModifier(new DiscardableModifier(0.75d)),
                 new MobVariant(MoreMobVariants.id("default"), 3)
         )));
-        defaultVariants.put(EntityType.COW, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.COW, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("umbra"), 1),
                 new MobVariant(MoreMobVariants.id("ashen"), 2),
                 new MobVariant(MoreMobVariants.id("cookie"), 2),
@@ -350,7 +351,7 @@ public class Variants {
                         .addModifier(new DiscardableModifier(0.8)),
                 new MobVariant(MoreMobVariants.id("default"), 3)
         )));
-        defaultVariants.put(EntityType.PIG, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.PIG, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("mottled"), 1)
                         .addModifier(new SpawnableBiomesModifier(BiomeTags.SPAWNS_WARM_VARIANT_FARM_ANIMALS)),
                 new MobVariant(MoreMobVariants.id("piebald"), 1),
@@ -360,7 +361,7 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("spotted"), 1),
                 new MobVariant(MoreMobVariants.id("default"), 2)
         )));
-        defaultVariants.put(EntityType.SHEEP, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.SHEEP, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("fuzzy"), 2)
                         .addModifier(new CustomWoolModifier())
                         .addModifier(new ShearedWoolColorModifier()),
@@ -379,7 +380,7 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("default"), 4)
                         .addModifier(new ShearedWoolColorModifier())
         )));
-        defaultVariants.put(EntityType.SKELETON, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.SKELETON, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("dungeons"), 3),
                 new MobVariant(MoreMobVariants.id("weathered"), 2),
                 new MobVariant(MoreMobVariants.id("sandy"), 1),
@@ -390,7 +391,7 @@ public class Variants {
                         .addModifier(new CustomVariantNameModifier("sandy")),
                 new MobVariant(MoreMobVariants.id("default"), 4)
         )));
-        defaultVariants.put(EntityType.SPIDER, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.SPIDER, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("bone"), 1)
                         .addModifier(new ShinyModifier())
                         .addModifier(new DiscardableModifier(0.8))
@@ -401,7 +402,7 @@ public class Variants {
                 new MobVariant(MoreMobVariants.id("black_widow"), 1),
                 new MobVariant(MoreMobVariants.id("default"), 5)
         )));
-        defaultVariants.put(EntityType.WOLF, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.WOLF, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("pale"), 1)
                         .addModifier(new SpawnableBiomesModifier(MoreMobVariants.SPAWN_PALE_WOLF)),
                 new MobVariant(MoreMobVariants.id("rusty"), 1)
@@ -470,7 +471,7 @@ public class Variants {
                                 MoreMobVariants.id("jupiter"),
                                 0.5))
          */
-        defaultVariants.put(EntityType.ZOMBIE, new ArrayList<>(List.of(
+        defaultVariants.put(EntityTypes.ZOMBIE, new ArrayList<>(List.of(
                 new MobVariant(MoreMobVariants.id("alex"), 2),
                 new MobVariant(MoreMobVariants.id("ari"), 1),
                 new MobVariant(MoreMobVariants.id("efe"), 1),

@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.entity.state.SkeletonRenderState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +25,7 @@ public class SkeletonRendererMixin {
 		ext.setMmvVariantId(nbt.getStringOr(MoreMobVariants.NBT_KEY, ""));
 		ext.setMmvTextureOverride(null);
 		if (entity.hasCustomName()) {
-			MobVariant v = Variants.getVariantFromNametag(EntityType.SKELETON, entity.getName().getString());
+			MobVariant v = Variants.getVariantFromNametag(EntityTypes.SKELETON, entity.getName().getString());
 			if (v != null) {
 				Identifier id = v.getIdentifier();
 				ext.setMmvTextureOverride(Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/entity/skeleton/" + id.getPath() + ".png"));

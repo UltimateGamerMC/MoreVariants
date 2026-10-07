@@ -35,7 +35,8 @@
     "PigFlowerMixin",
     "SheepWoolFeatureMixin",
     "CustomEyesFeatureMixin",
-    "QuadrupedEntityModelPartAccessor"
+    "QuadrupedEntityModelPartAccessor",
+    "PigModelInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
