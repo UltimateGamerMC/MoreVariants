@@ -20,9 +20,7 @@ public class LayerDefinitionsMixin {
 	)
 	private static ImmutableMap<ModelLayerLocation, LayerDefinition> mmv$injectLegacy(ImmutableMap.Builder<ModelLayerLocation, LayerDefinition> builder) {
 		builder.put(MMVEntityModelLayers.COW_LEGACY, LegacyCowEntityModel.createLayerDefinition());
-		builder.put(MMVEntityModelLayers.COW_LEGACY_BABY, LegacyCowEntityModel.createBabyLayerDefinition());
 		builder.put(MMVEntityModelLayers.PIG_LEGACY, LegacyPigEntityModel.createLayerDefinition());
-		builder.put(MMVEntityModelLayers.PIG_LEGACY_BABY, LegacyPigEntityModel.createBabyLayerDefinition());
 		builder.put(MMVEntityModelLayers.SHEEP_HORNS, SheepHornsFeatureRenderer.createHornsLayer());
 		return builder.build();
 	}

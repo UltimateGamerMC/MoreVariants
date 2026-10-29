@@ -123,4 +123,15 @@ public class MoreMobVariants implements ModInitializer {
 	public static void setCustomDataNbt(Entity entity, CompoundTag nbt) {
 		entity.setComponent(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
 	}
+
+	/**
+	 * Custom data is what gets saved and what clients are sent when they ask for a mob's variant, so a variant
+	 * read from NBT (summons, structures, older saves) has to land there too or the mob renders as vanilla
+	 * and loses its variant on the next save.
+	 */
+	public static void storeVariant(Entity entity, String variantId) {
+		CompoundTag nbt = getCustomDataNbt(entity);
+		nbt.putString(NBT_KEY, variantId);
+		setCustomDataNbt(entity, nbt);
+	}
 }

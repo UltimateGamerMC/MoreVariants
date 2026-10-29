@@ -60,6 +60,7 @@ public abstract class CatVariantsMixin extends MobEntityVariantsMixin {
             Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
             variant = Variants.getRandomVariant(EntityTypes.CAT, ((Cat)(Object)this).getRandom().nextLong(), w.getBiome(((Cat)(Object)this).blockPosition()), null, moonSize);
         }
+        MoreMobVariants.storeVariant((Entity)(Object)this, variant.getIdentifier().toString());
         invokeSetVariant(((Cat)(Object)this).registryAccess().lookupOrThrow(Registries.CAT_VARIANT).getOrThrow(CatVariants.TABBY));
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {

@@ -9,8 +9,6 @@ import net.minecraft.resources.Identifier;
 @Environment(EnvType.CLIENT)
 public class MMVEntityModelLayers {
 	public static final ModelLayerLocation COW_LEGACY = new ModelLayerLocation(Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "cow_legacy"), "main");
-	public static final ModelLayerLocation COW_LEGACY_BABY = new ModelLayerLocation(Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "cow_legacy_baby"), "main");
 	public static final ModelLayerLocation PIG_LEGACY = new ModelLayerLocation(Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "pig_legacy"), "main");
-	public static final ModelLayerLocation PIG_LEGACY_BABY = new ModelLayerLocation(Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "pig_legacy_baby"), "main");
 	public static final ModelLayerLocation SHEEP_HORNS = new ModelLayerLocation(Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "sheep_horns"), "main");
 }

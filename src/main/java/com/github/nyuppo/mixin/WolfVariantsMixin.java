@@ -67,6 +67,7 @@ public abstract class WolfVariantsMixin extends MobEntityVariantsMixin {
         if (!hasModVariant) {
             return;
         }
+        MoreMobVariants.storeVariant((Entity)(Object)this, variant.getIdentifier().toString());
         invokeSetVariant(((Wolf)(Object)this).registryAccess().lookupOrThrow(Registries.WOLF_VARIANT).getOrThrow(WolfVariants.DEFAULT));
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {

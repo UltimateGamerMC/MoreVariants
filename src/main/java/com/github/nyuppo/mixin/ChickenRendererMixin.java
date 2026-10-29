@@ -3,6 +3,7 @@ package com.github.nyuppo.mixin;
 import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.MoreMobVariantsClient;
 import com.github.nyuppo.client.render.MMVLivingRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.util.MMVTrackedData;
 import com.github.nyuppo.variant.MobVariant;
@@ -25,6 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChickenRenderer.class)
 public class ChickenRendererMixin {
 	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/chicken/chicken_temperate.png");
+	private static final Identifier DEFAULT_BABY = Identifier.withDefaultNamespace("textures/entity/chicken/chicken_temperate_baby.png");
 
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
 	private void onExtractRenderState(Chicken entity, ChickenRenderState state, float partialTicks, CallbackInfo ci) {
@@ -59,27 +61,25 @@ public class ChickenRendererMixin {
 	@Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
 	private void onGetTextureLocationHead(ChickenRenderState state, CallbackInfoReturnable<Identifier> ci) {
 		MMVLivingRenderState ext = (MMVLivingRenderState) state;
-		if (ext.getMmvTextureOverride() != null) {
-			ci.setReturnValue(ext.getMmvTextureOverride());
-			return;
-		}
+		Identifier texture = ext.getMmvTextureOverride();
 		String variant = ext.getMmvVariantId();
-		if (variant != null && !variant.isEmpty()) {
-			if (variant.equals(MoreMobVariants.id("default").toString())) {
-				ci.setReturnValue(DEFAULT);
-			} else {
-				String[] split = Variants.splitVariant(variant);
-				if (Variants.getVariantNullable(EntityTypes.CHICKEN, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
-					ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/chicken/" + split[1] + ".png"));
-				}
+		// "default" chickens are drawn as vanilla temperate chickens, which vanilla already textures for both ages
+		if (texture == null && variant != null && !variant.isEmpty() && !variant.equals(MoreMobVariants.id("default").toString())) {
+			String[] split = Variants.splitVariant(variant);
+			if (Variants.getVariantNullable(EntityTypes.CHICKEN, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
+				texture = Identifier.fromNamespaceAndPath(split[0], "textures/entity/chicken/" + split[1] + ".png");
 			}
+		}
+		if (texture != null) {
+			texture = MMVTextures.forAge(texture, state.isBaby);
+			if (texture != null) ci.setReturnValue(texture);
 		}
 	}
 
 	@Inject(method = "getTextureLocation", at = @At("RETURN"))
 	private void onGetTextureLocationReturn(ChickenRenderState state, CallbackInfoReturnable<Identifier> ci) {
 		if (ci.getReturnValue() != null && MissingTextureAtlasSprite.getLocation().equals(ci.getReturnValue())) {
-			ci.setReturnValue(DEFAULT);
+			ci.setReturnValue(state.isBaby ? DEFAULT_BABY : DEFAULT);
 		}
 	}
 }

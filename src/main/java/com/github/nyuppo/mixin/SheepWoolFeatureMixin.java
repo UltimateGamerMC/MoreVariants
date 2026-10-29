@@ -2,6 +2,7 @@ package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.client.render.MMVSheepRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -45,6 +46,7 @@ public class SheepWoolFeatureMixin {
 		int colon = variantStr.indexOf(':');
 		Identifier variantId = colon >= 0 ? Identifier.fromNamespaceAndPath(variantStr.substring(0, colon), variantStr.substring(colon + 1)) : MoreMobVariants.id(variantStr);
 		if (!Variants.getVariant(EntityTypes.SHEEP, variantId).hasCustomWool()) return location;
-		return Identifier.fromNamespaceAndPath(variantId.getNamespace(), "textures/entity/sheep/wool/" + variantId.getPath() + ".png");
+		Identifier wool = MMVTextures.forAge(Identifier.fromNamespaceAndPath(variantId.getNamespace(), "textures/entity/sheep/wool/" + variantId.getPath() + ".png"), state.isBaby);
+		return wool != null ? wool : location;
 	}
 }

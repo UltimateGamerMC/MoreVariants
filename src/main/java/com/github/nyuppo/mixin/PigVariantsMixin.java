@@ -5,6 +5,7 @@ import com.github.nyuppo.config.VariantSettings;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.networking.ServerRespondVariantPayload;
 import com.github.nyuppo.variant.MobVariant;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -68,6 +69,11 @@ public abstract class PigVariantsMixin extends MobEntityVariantsMixin {
                 variant = Variants.getVariant(EntityTypes.PIG, MoreMobVariants.id(variantStr));
             }
             invokeSetVariant(((Pig)(Object)this).registryAccess().lookupOrThrow(Registries.PIG_VARIANT).getOrThrow(PigVariants.TEMPERATE));
+            var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
+            data.putString(MoreMobVariants.NBT_KEY, variant.getIdentifier().toString());
+            data.putBoolean(MoreMobVariants.MUDDY_NBT_KEY, isMuddy);
+            data.putInt(MoreMobVariants.MUDDY_TIMEOUT_NBT_KEY, muddyTimeLeft);
+            MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
         } else {
             Entity e = (Entity)(Object)this;
             if (MoreMobVariants.isTemperateBiome(e.level().getBiome(((Pig)(Object)this).blockPosition()))) {
@@ -108,7 +114,9 @@ public abstract class PigVariantsMixin extends MobEntityVariantsMixin {
 
     @Override
     protected void onTick(CallbackInfo ci) {
-        // Handle muddy pigs
+        // Handle muddy pigs (server decides, then tells the clients that can see the pig)
+        if (((Pig)(Object)this).level().isClientSide()) return;
+        boolean wasMuddy = isMuddy;
         if (VariantSettings.getEnableMuddyPigs()) {
             int muddyPigTimeout = VariantSettings.getMuddyPigTimeout();
 
@@ -129,6 +137,19 @@ public abstract class PigVariantsMixin extends MobEntityVariantsMixin {
                 if (muddyTimeLeft == 0) {
                     isMuddy = false;
                     muddyTimeLeft = -1;
+                }
+            }
+        }
+        if (isMuddy != wasMuddy) {
+            Pig pig = (Pig)(Object)this;
+            var data = MoreMobVariants.getCustomDataNbt(pig);
+            data.putBoolean(MoreMobVariants.MUDDY_NBT_KEY, isMuddy);
+            data.putInt(MoreMobVariants.MUDDY_TIMEOUT_NBT_KEY, muddyTimeLeft);
+            MoreMobVariants.setCustomDataNbt(pig, data);
+            String variantId = data.getStringOr(MoreMobVariants.NBT_KEY, "");
+            if (!variantId.isEmpty()) {
+                for (var player : PlayerLookup.tracking(pig)) {
+                    ServerPlayNetworking.send(player, new ServerRespondVariantPayload(pig.getId(), variantId, isMuddy, muddyTimeLeft, ""));
                 }
             }
         }

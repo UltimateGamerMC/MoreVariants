@@ -3,6 +3,7 @@ package com.github.nyuppo.mixin;
 import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.client.render.MMVEntityModelLayers;
 import com.github.nyuppo.client.render.MMVPigRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.AdultAndBabyModelPair;
@@ -31,8 +32,6 @@ import java.util.Map;
 
 @Mixin(PigRenderer.class)
 public class PigRendererMixin {
-	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/pig/pig_temperate.png");
-
 	@Shadow
 	private Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> models;
 
@@ -44,10 +43,9 @@ public class PigRendererMixin {
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void onInit(net.minecraft.client.renderer.entity.EntityRendererProvider.Context context, CallbackInfo ci) {
-		moremobvariants$legacyPair = new AdultAndBabyModelPair<>(
-			new PigModel(context.bakeLayer(MMVEntityModelLayers.PIG_LEGACY)),
-			new PigModel(context.bakeLayer(MMVEntityModelLayers.PIG_LEGACY_BABY))
-		);
+		// Babies keep vanilla's baby model (variant skins ship a matching _baby texture), so only adults swap model.
+		PigModel legacy = new PigModel(context.bakeLayer(MMVEntityModelLayers.PIG_LEGACY));
+		moremobvariants$legacyPair = new AdultAndBabyModelPair<>(legacy, legacy);
 	}
 
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
@@ -75,7 +73,7 @@ public class PigRendererMixin {
 	@Redirect(method = "submit", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
 	private Object moremobvariants$redirectGetModelPair(Map<?, ?> map, Object key) {
 		PigRenderState state = moremobvariants$renderState.get();
-		if (state instanceof MMVPigRenderState ext && map == this.models && moremobvariants$legacyPair != null) {
+		if (state instanceof MMVPigRenderState ext && !state.isBaby && map == this.models && moremobvariants$legacyPair != null) {
 			String mmvId = ext.getMmvVariantId();
 			if (mmvId != null && !mmvId.isEmpty() && !mmvId.equals(MoreMobVariants.id("default").toString())) {
 				return moremobvariants$legacyPair;
@@ -87,13 +85,11 @@ public class PigRendererMixin {
 	@Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
 	private void onGetTextureLocation(PigRenderState state, CallbackInfoReturnable<Identifier> ci) {
 		String variant = ((MMVPigRenderState) state).getMmvVariantId();
-		if (variant != null && !variant.isEmpty()) {
-			if (variant.equals(MoreMobVariants.id("default").toString())) {
-				ci.setReturnValue(DEFAULT);
-			} else {
-				String[] split = Variants.splitVariant(variant);
-				ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/pig/" + split[1] + ".png"));
-			}
+		// "default" pigs are drawn as vanilla temperate pigs, which vanilla already textures for both ages
+		if (variant != null && !variant.isEmpty() && !variant.equals(MoreMobVariants.id("default").toString())) {
+			String[] split = Variants.splitVariant(variant);
+			Identifier texture = MMVTextures.forAge(Identifier.fromNamespaceAndPath(split[0], "textures/entity/pig/" + split[1] + ".png"), state.isBaby);
+			if (texture != null) ci.setReturnValue(texture);
 		}
 	}
 }

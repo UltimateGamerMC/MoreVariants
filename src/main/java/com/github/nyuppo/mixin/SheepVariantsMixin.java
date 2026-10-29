@@ -54,7 +54,13 @@ public abstract class SheepVariantsMixin extends MobEntityVariantsMixin {
             Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
             variant = Variants.getRandomVariant(EntityTypes.SHEEP, ((Sheep)(Object)this).getRandom().nextLong(), w.getBiome(((Sheep)(Object)this).blockPosition()), null, moonSize);
         }
+        MoreMobVariants.storeVariant((Entity)(Object)this, variant.getIdentifier().toString());
         hornColour = view.getStringOr(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, "");
+        if (!hornColour.isEmpty()) {
+            var data = MoreMobVariants.getCustomDataNbt((Entity)(Object)this);
+            data.putString(MoreMobVariants.SHEEP_HORN_COLOUR_NBT_KEY, hornColour);
+            MoreMobVariants.setCustomDataNbt((Entity)(Object)this, data);
+        }
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {
             server.getPlayerList().getPlayers().forEach((player) -> {

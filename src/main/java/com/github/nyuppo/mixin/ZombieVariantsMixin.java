@@ -48,6 +48,7 @@ public class ZombieVariantsMixin extends MobEntityVariantsMixin {
             Float moonSize = w instanceof ServerLevel ? ((ServerLevel)w).getMoonBrightness(e.blockPosition()) : null;
             variant = Variants.getRandomVariant(EntityTypes.ZOMBIE, ((Zombie)(Object)this).getRandom().nextLong(), w.getBiome(((Zombie)(Object)this).blockPosition()), null, moonSize);
         }
+        MoreMobVariants.storeVariant((Entity)(Object)this, variant.getIdentifier().toString());
         MinecraftServer server = ((Entity)(Object)this).level().getServer();
         if (server != null) {
             server.getPlayerList().getPlayers().forEach((player) -> {

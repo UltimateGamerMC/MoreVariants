@@ -8,6 +8,8 @@ import com.github.nyuppo.variant.MobVariant;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -29,6 +31,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.ServerLevelAccessor;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -36,11 +39,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Chicken.class)
 public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
+	@Unique
+	private static final EntityDataAccessor<String> MOREMOBVARIANTS$VARIANT_ID = MMVTrackedData.CHICKEN_VARIANT_ID = SynchedEntityData.defineId(Chicken.class, EntityDataSerializers.STRING);
+
 	private MobVariant variant = Variants.getDefaultVariant(EntityTypes.CHICKEN);
 
 	@Inject(method = "defineSynchedData", at = @At("TAIL"))
 	private void onDefineSynchedData(SynchedEntityData.Builder entityData, CallbackInfo ci) {
-		entityData.define(MMVTrackedData.CHICKEN_VARIANT_ID, "");
+		entityData.define(MOREMOBVARIANTS$VARIANT_ID, "");
 	}
 
 	@Override
@@ -64,6 +70,7 @@ public abstract class ChickenVariantsMixin extends MobEntityVariantsMixin {
 			}
 			((Chicken) (Object) this).getEntityData().set(MMVTrackedData.CHICKEN_VARIANT_ID, variant.getIdentifier().toString());
 			((Chicken) (Object) this).setVariant(((Chicken) (Object) this).registryAccess().lookupOrThrow(Registries.CHICKEN_VARIANT).getOrThrow(ChickenVariants.TEMPERATE));
+			MoreMobVariants.storeVariant((Entity) (Object) this, variant.getIdentifier().toString());
 		} else {
 			Entity e = (Entity) (Object) this;
 			Level w = e.level();

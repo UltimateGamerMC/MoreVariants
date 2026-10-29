@@ -4,6 +4,7 @@ import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.MoreMobVariantsClient;
 import com.github.nyuppo.client.render.MMVEntityModelLayers;
 import com.github.nyuppo.client.render.MMVLivingRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.variant.MobVariant;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -36,6 +37,7 @@ import java.util.Map;
 @Mixin(CowRenderer.class)
 public class CowRendererMixin {
 	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/cow/cow_temperate.png");
+	private static final Identifier DEFAULT_BABY = Identifier.withDefaultNamespace("textures/entity/cow/cow_temperate_baby.png");
 	private static final Identifier LEGACY_DEFAULT = Identifier.fromNamespaceAndPath("moremobvariants", "textures/entity/cow/legacy_reference.png");
 
 	@Shadow
@@ -49,10 +51,9 @@ public class CowRendererMixin {
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void onInit(net.minecraft.client.renderer.entity.EntityRendererProvider.Context context, CallbackInfo ci) {
-		moremobvariants$legacyPair = new AdultAndBabyModelPair<>(
-			new CowModel(context.bakeLayer(MMVEntityModelLayers.COW_LEGACY)),
-			new CowModel(context.bakeLayer(MMVEntityModelLayers.COW_LEGACY_BABY))
-		);
+		// Babies keep vanilla's baby model (variant skins ship a matching _baby texture), so only adults swap model.
+		CowModel legacy = new CowModel(context.bakeLayer(MMVEntityModelLayers.COW_LEGACY));
+		moremobvariants$legacyPair = new AdultAndBabyModelPair<>(legacy, legacy);
 	}
 
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
@@ -86,20 +87,18 @@ public class CowRendererMixin {
 	@Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
 	private void onGetTextureLocationHead(CowRenderState state, CallbackInfoReturnable<Identifier> ci) {
 		MMVLivingRenderState ext = (MMVLivingRenderState) state;
-		if (ext.getMmvTextureOverride() != null) {
-			ci.setReturnValue(ext.getMmvTextureOverride());
-			return;
-		}
+		Identifier texture = ext.getMmvTextureOverride();
 		String variant = ext.getMmvVariantId();
-		if (variant != null && !variant.isEmpty()) {
-			if (variant.equals(MoreMobVariants.id("default").toString())) {
-				ci.setReturnValue(DEFAULT);
-			} else {
-				String[] split = Variants.splitVariant(variant);
-				if (Variants.getVariantNullable(EntityTypes.COW, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
-					ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/cow/" + split[1] + ".png"));
-				}
+		// "default" cows are drawn as vanilla temperate cows, which vanilla already textures for both ages
+		if (texture == null && variant != null && !variant.isEmpty() && !variant.equals(MoreMobVariants.id("default").toString())) {
+			String[] split = Variants.splitVariant(variant);
+			if (Variants.getVariantNullable(EntityTypes.COW, Identifier.fromNamespaceAndPath(split[0], split[1])) != null) {
+				texture = Identifier.fromNamespaceAndPath(split[0], "textures/entity/cow/" + split[1] + ".png");
 			}
+		}
+		if (texture != null) {
+			texture = MMVTextures.forAge(texture, state.isBaby);
+			if (texture != null) ci.setReturnValue(texture);
 		}
 	}
 
@@ -108,8 +107,8 @@ public class CowRendererMixin {
 		if (ci.getReturnValue() != null && MissingTextureAtlasSprite.getLocation().equals(ci.getReturnValue())) {
 			MMVLivingRenderState ext = (MMVLivingRenderState) state;
 			String mmvId = ext.getMmvVariantId();
-			boolean useLegacyModel = mmvId != null && !mmvId.isEmpty() && !mmvId.equals(MoreMobVariants.id("default").toString());
-			ci.setReturnValue(useLegacyModel ? LEGACY_DEFAULT : DEFAULT);
+			boolean useLegacyModel = !state.isBaby && mmvId != null && !mmvId.isEmpty() && !mmvId.equals(MoreMobVariants.id("default").toString());
+			ci.setReturnValue(useLegacyModel ? LEGACY_DEFAULT : state.isBaby ? DEFAULT_BABY : DEFAULT);
 		}
 	}
 
@@ -126,7 +125,7 @@ public class CowRendererMixin {
 	@Redirect(method = "submit", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
 	private Object moremobvariants$redirectGetModelPair(Map<?, ?> map, Object key) {
 		CowRenderState state = moremobvariants$renderState.get();
-		if (state instanceof MMVLivingRenderState ext && map == this.models && moremobvariants$legacyPair != null) {
+		if (state instanceof MMVLivingRenderState ext && !state.isBaby && map == this.models && moremobvariants$legacyPair != null) {
 			String mmvId = ext.getMmvVariantId();
 			if (mmvId != null && !mmvId.isEmpty() && !mmvId.equals(MoreMobVariants.id("default").toString())) {
 				return moremobvariants$legacyPair;

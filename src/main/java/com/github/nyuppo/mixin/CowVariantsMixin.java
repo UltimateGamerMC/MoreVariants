@@ -58,6 +58,7 @@ public abstract class CowVariantsMixin extends MobEntityVariantsMixin {
                 variant = Variants.getVariant(EntityTypes.COW, MoreMobVariants.id(variantStr));
             }
             setCowVariantTemperate((Cow)(Object)this);
+            MoreMobVariants.storeVariant((Entity)(Object)this, variant.getIdentifier().toString());
         } else {
             Entity e = (Entity)(Object)this;
             Level w = e.level();

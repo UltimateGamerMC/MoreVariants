@@ -2,6 +2,7 @@ package com.github.nyuppo.client.render.entity.feature;
 
 import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.client.render.MMVSheepRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.api.EnvType;
@@ -33,7 +34,8 @@ public class ShearedWoolColorFeatureRenderer extends RenderLayer<SheepRenderStat
 		int colon = variantStr.indexOf(':');
 		Identifier variantId = colon >= 0 ? Identifier.fromNamespaceAndPath(variantStr.substring(0, colon), variantStr.substring(colon + 1)) : MoreMobVariants.id(variantStr);
 		if (!Variants.getVariant(EntityTypes.SHEEP, variantId).hasColorWhenSheared()) return;
-		Identifier overlay = MoreMobVariants.id("textures/entity/sheep/sheared_color_overlay/" + variantId.getPath() + ".png");
+		Identifier overlay = MMVTextures.forAge(MoreMobVariants.id("textures/entity/sheep/sheared_color_overlay/" + variantId.getPath() + ".png"), state.isBaby);
+		if (overlay == null) return;
 		EntityModel<SheepRenderState> model = getParentModel();
 		submitNodeCollector.order(0)
 			.submitModel(

@@ -17,6 +17,7 @@ import net.minecraft.resources.Identifier;
 @Environment(EnvType.CLIENT)
 public class PigMudFeatureRenderer extends RenderLayer<PigRenderState, PigModel> {
 	private static final Identifier MUD_TEXTURE = Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "textures/entity/pig/mud/mud_overlay.png");
+	private static final Identifier MUD_TEXTURE_BABY = Identifier.fromNamespaceAndPath(MoreMobVariants.MOD_ID, "textures/entity/pig/mud/mud_overlay_baby.png");
 
 	public PigMudFeatureRenderer(RenderLayerParent<PigRenderState, PigModel> context) {
 		super(context);
@@ -30,7 +31,7 @@ public class PigMudFeatureRenderer extends RenderLayer<PigRenderState, PigModel>
 				getParentModel(),
 				state,
 				poseStack,
-				RenderTypes.entityTranslucent(MUD_TEXTURE),
+				RenderTypes.entityTranslucent(state.isBaby ? MUD_TEXTURE_BABY : MUD_TEXTURE),
 				lightCoords,
 				LivingEntityRenderer.getOverlayCoords(state, 0.0F),
 				0xFFFFFFFF,

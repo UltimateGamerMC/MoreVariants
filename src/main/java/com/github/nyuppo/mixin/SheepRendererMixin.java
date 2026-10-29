@@ -2,6 +2,7 @@ package com.github.nyuppo.mixin;
 
 import com.github.nyuppo.MoreMobVariants;
 import com.github.nyuppo.client.render.MMVSheepRenderState;
+import com.github.nyuppo.client.render.MMVTextures;
 import com.github.nyuppo.config.Variants;
 import com.github.nyuppo.variant.MobVariant;
 import net.minecraft.client.renderer.entity.SheepRenderer;
@@ -19,8 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SheepRenderer.class)
 public class SheepRendererMixin {
-	private static final Identifier DEFAULT = Identifier.withDefaultNamespace("textures/entity/sheep/sheep.png");
-
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
 	private void onExtractRenderState(Sheep entity, SheepRenderState state, float partialTicks, CallbackInfo ci) {
 		CompoundTag nbt = MoreMobVariants.getCustomDataNbt(entity);
@@ -41,18 +40,16 @@ public class SheepRendererMixin {
 	@Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
 	private void onGetTextureLocation(SheepRenderState state, CallbackInfoReturnable<Identifier> ci) {
 		MMVSheepRenderState ext = (MMVSheepRenderState) state;
-		if (ext.getMmvTextureOverride() != null) {
-			ci.setReturnValue(ext.getMmvTextureOverride());
-			return;
-		}
+		Identifier texture = ext.getMmvTextureOverride();
 		String variant = ext.getMmvVariantId();
-		if (variant != null && !variant.isEmpty()) {
-			if (variant.equals(MoreMobVariants.id("default").toString())) {
-				ci.setReturnValue(DEFAULT);
-			} else {
-				String[] split = Variants.splitVariant(variant);
-				ci.setReturnValue(Identifier.fromNamespaceAndPath(split[0], "textures/entity/sheep/" + split[1] + ".png"));
-			}
+		// "default" sheep are plain vanilla sheep, which vanilla already textures for both ages
+		if (texture == null && variant != null && !variant.isEmpty() && !variant.equals(MoreMobVariants.id("default").toString())) {
+			String[] split = Variants.splitVariant(variant);
+			texture = Identifier.fromNamespaceAndPath(split[0], "textures/entity/sheep/" + split[1] + ".png");
+		}
+		if (texture != null) {
+			texture = MMVTextures.forAge(texture, state.isBaby);
+			if (texture != null) ci.setReturnValue(texture);
 		}
 	}
 }

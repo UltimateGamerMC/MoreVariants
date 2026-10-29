@@ -52,7 +52,8 @@ public class SheepHornsFeatureRenderer extends RenderLayer<SheepRenderState, She
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, SheepRenderState state, float yRot, float xRot) {
 		String hornColour = ((MMVSheepRenderState) state).getMmvHornColour();
-		if (hornColour == null || hornColour.isEmpty()) return;
+		// lambs haven't grown their horns yet (the 26.x lamb model has no head shape for them anyway)
+		if (hornColour == null || hornColour.isEmpty() || state.isBaby) return;
 		hornsModel.setupAnim(state);
 		Identifier texture = switch (hornColour.toLowerCase()) {
 			case "brown" -> HORNS_BROWN;
@@ -62,15 +63,7 @@ public class SheepHornsFeatureRenderer extends RenderLayer<SheepRenderState, She
 			default -> null;
 		};
 		if (texture == null) return;
-		if (state.isBaby) {
-			poseStack.pushPose();
-			poseStack.translate(0.0, 0.5, 0.25);
-			submitNodeCollector.order(0)
-				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor);
-			poseStack.popPose();
-		} else {
-			submitNodeCollector.order(0)
-				.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor);
-		}
+		submitNodeCollector.order(0)
+			.submitModel(hornsModel, state, poseStack, RenderTypes.entityCutout(texture), lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0.0F), 0xFFFFFFFF, null, state.outlineColor);
 	}
 }
